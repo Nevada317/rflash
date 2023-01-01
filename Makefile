@@ -17,7 +17,28 @@ $(info Found sources: ${SRCS})
 $(info Target objects: ${OBJS})
 $(info )
 
-CFLAGS+="-Wall"
+# Set warnings varbosity
+CFLAGS  += -Wall
+CFLAGS  += -Wextra
+
+# Optimizer configuration
+CFLAGS += -O3
+
+# Generate lots of debug info
+CFLAGS += -g
+CFLAGS += -ggdb
+CFLAGS += -gdwarf
+
+# Add all search paths for headers on order of prefrence
+CFLAGS += -I.
+CFLAGS += -Isrc/
+CFLAGS += -Iihex/
+
+# Optimize-out unused functions
+CFLAGS  += -fdata-sections
+CFLAGS  += -ffunction-sections
+LDFLAGS += -Wl,--gc-sections
+
 
 ${BINARY}: ${OBJS}
 	@echo "Making main binary"
