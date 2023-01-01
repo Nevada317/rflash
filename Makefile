@@ -3,12 +3,14 @@
 PROG=rflash
 CC?=gcc
 CCLD?=gcc
+STRIP?=strip
 
 HEADS=$(shell find . -name "*.h")
 SRCS=$(shell find . -name "*.c")
 OBJS=$(patsubst %.c,%.o,${SRCS})
 
 BINARY=${PROG}
+BINARY_UNSTRIPPED=${PROG}_unstripped
 CLEAR_TARGETS=${OBJS} ${BINARY}
 EXTRADEPS=Makefile
 
@@ -39,8 +41,12 @@ CFLAGS  += -fdata-sections
 CFLAGS  += -ffunction-sections
 LDFLAGS += -Wl,--gc-sections
 
+${BINARY}: ${BINARY_UNSTRIPPED}
+	@echo "Stripping main binary"
+	$(STRIP) -o $@ $<
+	@echo -e "Done\n"
 
-${BINARY}: ${OBJS}
+${BINARY_UNSTRIPPED}: ${OBJS}
 	@echo "Making main binary"
 	$(CC) ${CFLAGS} ${LDFLAGS} -o $@ $^ ${LIBS}
 	@echo -e "Done\n"

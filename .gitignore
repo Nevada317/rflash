@@ -1,2 +1,3 @@
 *.o
 rflash
+rflash_unstripped
