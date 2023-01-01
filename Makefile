@@ -21,7 +21,7 @@ CFLAGS+="-Wall"
 
 ${BINARY}: ${OBJS}
 	@echo "Making main binary"
-	$(CC) ${CFLAGS} -o $@ $^ ${LIBS}
+	$(CC) ${CFLAGS} ${LDFLAGS} -o $@ $^ ${LIBS}
 	@echo -e "Done\n"
 
 %.o: %.c ${HEADS} ${EXTRADEPS}
