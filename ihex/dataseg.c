@@ -4,6 +4,10 @@
 
 static bool _try_to_merge(datasegment_t* A);
 
+static bool _DATASEG_Sort(datasegment_t* root);
+static void _DATASEG_Swap(datasegment_t* B);
+
+
 // Create new root instance on datasegment_t and return pointer to it
 datasegment_t* DATASEG_CreateRoot() {
 	return calloc(1, sizeof(datasegment_t));
@@ -158,6 +162,29 @@ bool DATASEG_Merge(datasegment_t* root) {
 	return result;
 }
 
+// Sort all segments
+// Returns true if any swaps were done
+bool DATASEG_Sort(datasegment_t* root) {
+	bool res = false;
+	while (_DATASEG_Sort(root)) {
+		res = true;
+	}
+	return res;
+}
+
+// Fuses all segments by removing all repeats
+// Returns true if any swaps were done
+// bool DATASEG_Fuse(datasegment_t* root) {
+// 	bool res = false;
+// 	datasegment_t** ptr_root = root->ptr_root;
+// 	while (true) {
+// 		DATASEG_Sort(*ptr_root);
+// 		if (!_DATASEG_Fuse(*ptr_root)) break;
+// 		res = true;
+// 	}
+// 	return res;
+// }
+
 // Destroy non-allocated data segments from list
 datasegment_t* DATASEG_Cleanup(datasegment_t* root) {
 	datasegment_t* real_root = DATASEG_GetRoot(root);
@@ -220,4 +247,44 @@ static bool _try_to_merge(datasegment_t* A) {
 	memcpy(p->Payload + OldLength, B->Payload, B->Length);
 	DATASEG_Remove(B);
 	return true;
+}
+
+static bool _DATASEG_Sort(datasegment_t* root) {
+	datasegment_t* real_root = DATASEG_GetRoot(root);
+
+	datasegment_t* ptr1 = 0;
+	datasegment_t* ptr2 = real_root;
+	while (ptr2) {
+		do {
+			if (!ptr1) break;
+			if (!ptr2) break;
+			if (ptr1->Offset <= ptr2->Offset) break;
+			if (ptr1->Offset < (ptr2->Offset+ptr2->Length)) break;
+			_DATASEG_Swap(ptr1);
+			return true;
+		} while (0);
+
+		ptr1 = ptr2;
+		ptr2 = ptr2->next;
+	}
+	return false;
+}
+
+// static bool _DATASEG_Fuse(datasegment_t* root) {
+// }
+
+static void _DATASEG_Swap(datasegment_t* B) {
+	// Swaps B with next
+	datasegment_t* A = B->prev;
+	datasegment_t* C = B->next;
+	datasegment_t* D = C->next;
+	if (*B->ptr_root == B) *B->ptr_root = C;
+
+	if (A) A->next = C;
+	C->next = B;
+	B->next = D;
+
+	if (D) D->prev = B;
+	B->prev = C;
+	C->prev = A;
 }
