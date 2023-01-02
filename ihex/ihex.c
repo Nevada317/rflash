@@ -87,6 +87,7 @@ static bool _try_to_add_seg(datasegment_t** ptr_root, char* line, ihex_context_t
 	printf("Addr %04x, ", addr);
 
 	ihex_rtype_t type = (ihex_rtype_t) _read_hexBE(rptr, 1);
+	rptr += 2* 1;
 	switch (type) {
 		case IHEX_Type_Data:
 			// Only possible break
@@ -99,8 +100,8 @@ static bool _try_to_add_seg(datasegment_t** ptr_root, char* line, ihex_context_t
 			ctx->terminated = true;
 			return true;
 		case IHEX_Type_ExtSegAddr:
-			return false;
-			// break;
+			ctx->address_offset = (uint32_t) 16 * _read_hexBE(rptr, 2);
+			return true;
 		case IHEX_Type_StaSegAddr:
 			return false;
 			// break;
