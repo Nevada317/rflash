@@ -74,7 +74,7 @@ static bool _try_to_add_seg(datasegment_t** ptr_root, char* line, ihex_context_t
 	char* chptr = line+1;
 	uint8_t check = 0;
 	for (uint16_t i = 0; i < (1+2+1+payload_len+1); i++) {
-		check +=_read_hexBE(chptr, 1);
+		check += _read_hexBE(chptr, 1);
 		chptr += 2;
 	}
 	if (check) {
@@ -120,10 +120,18 @@ static bool _try_to_add_seg(datasegment_t** ptr_root, char* line, ihex_context_t
 		return false;
 	}
 
+	datasegment_t* seg = DATASEG_AutoAppend(ptr_root);
+	if (!seg) return false;
+	seg = DATASEG_Alloc(seg, ctx->address_offset + addr, payload_len);
+	if (!seg->Payload) return false;
 
+	uint8_t* wptr = seg->Payload;
+	for (uint16_t i = 0; i < payload_len; i++) {
+		*(wptr++) = _read_hexBE(rptr, 1);
+		rptr += 2* 1;
+	}
 
-
-	return false;
+	return true;
 }
 
 bool IHEX_AppendHex(datasegment_t** ptr_root, char* filename) {
@@ -133,7 +141,7 @@ bool IHEX_AppendHex(datasegment_t** ptr_root, char* filename) {
 		printf("Error opening file '%s'", filename);
 		return false;
 	}
-	ihex_context_t ctx;
+	ihex_context_t ctx = {0};
 	char str[MaxStringLength+1];
 	char* lfptr;
 	while (1) {
