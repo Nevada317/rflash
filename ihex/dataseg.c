@@ -1,5 +1,6 @@
 #include "dataseg.h"
 #include <stdlib.h>
+#include <string.h>
 
 // Create new root instance on datasegment_t and return pointer to it
 datasegment_t* DATASEG_CreateRoot() {
@@ -12,6 +13,7 @@ datasegment_t* DATASEG_Append(datasegment_t* root) {
 	datasegment_t* added = calloc(1, sizeof(datasegment_t));
 	tail->next = added;
 	added->prev = tail;
+	added->ptr_root = tail->ptr_root;
 	return added;
 }
 
@@ -25,6 +27,7 @@ datasegment_t* DATASEG_AutoAppend(datasegment_t** ptr_root) {
 	} else {
 		// New root
 		*ptr_root = DATASEG_CreateRoot();
+		(*ptr_root)->ptr_root = ptr_root;
 		return *ptr_root;
 	}
 }
@@ -54,6 +57,36 @@ datasegment_t* DATASEG_Alloc(datasegment_t* record, uint32_t Offset, uint32_t Le
 	record->Length = Length;
 	return record;
 }
+
+// Change length of data segment
+datasegment_t* DATASEG_Extend(datasegment_t* record, uint32_t NewLength) {
+	if (!record) return 0;
+	if (!NewLength) return DATASEG_Dealloc(record);
+
+	uint32_t OldLength = record->Length;
+	if (OldLength == NewLength) return record;
+
+	if (!record->Payload) OldLength = 0;
+	record->Payload = realloc(record->Payload, NewLength);
+	if (OldLength < NewLength) {
+		memset(record->Payload + OldLength, 0, NewLength - OldLength);
+	}
+	record->Length = NewLength;
+	return record;
+}
+
+// Reduce length of data segment
+datasegment_t* DATASEG_ShiftLeft(datasegment_t* record, uint32_t CutLength) {
+	if (!record) return 0;
+	if (record->Length <= CutLength) return DATASEG_Dealloc(record);
+	if (!record->Payload) return DATASEG_Dealloc(record);
+	memmove(record->Payload, record->Payload + CutLength, record->Length - CutLength);
+	record->Length -= CutLength;
+	record->Offset += CutLength;
+	record->Payload = realloc(record->Payload, record->Length);
+	return record;
+}
+
 
 // Deallocate data segment in given list item
 datasegment_t* DATASEG_Dealloc(datasegment_t* record) {
@@ -116,6 +149,11 @@ datasegment_t* DATASEG_Remove(datasegment_t* record) {
 	datasegment_t* next = record->next;
 	if (next) next->prev = prev;
 	if (prev) prev->next = next;
+
+	if (*(record->ptr_root) == record) {
+		// Removing root record
+		*(record->ptr_root) = next;
+	}
 
 	DATASEG_Dealloc(record);
 	free(record);

@@ -6,6 +6,7 @@
 typedef struct datasegment_t datasegment_t;
 
 struct datasegment_t {
+	datasegment_t** ptr_root;
 	datasegment_t* prev;
 	datasegment_t* next;
 	uint32_t Offset;
@@ -27,6 +28,10 @@ datasegment_t* DATASEG_GetTail(datasegment_t* record);
 
 // Allocate data segment in given list item
 datasegment_t* DATASEG_Alloc(datasegment_t* record, uint32_t Offset, uint32_t Length);
+// Change length of data segment
+datasegment_t* DATASEG_Extend(datasegment_t* record, uint32_t NewLength);
+// Reduce length of data segment
+datasegment_t* DATASEG_CutLeft(datasegment_t* record, uint32_t CutLength);
 // Deallocate data segment in given list item
 datasegment_t* DATASEG_Dealloc(datasegment_t* record);
 
@@ -40,7 +45,6 @@ datasegment_t** DATASEG_Enumerate(datasegment_t* root, uint32_t* count);
 datasegment_t* DATASEG_Cleanup(datasegment_t* root);
 // Removes item from list (even if it is not first or last one) and
 // returns pointer to prev (or next) item
-// NOTE: Be careful not to remove root item
 datasegment_t* DATASEG_Remove(datasegment_t* record);
 
 #endif /* _DATASEG_H */
