@@ -60,11 +60,15 @@ static bool _try_to_add_seg(datasegment_t** ptr_root, char* line, ihex_context_t
 		return false;
 	}
 
+#ifdef DEBUG_IHEX
 	printf("\nParsing line:\n%s\n", line);
+#endif
 
 	uint8_t payload_len = _read_hexBE(rptr, 1);
 	rptr += 2* 1;
+#ifdef DEBUG_IHEX
 	printf("Length %02x, ", payload_len);
+#endif
 
 	if ((int)strlen(line) != (2*(1+2+1+payload_len+1) + 1)) {
 		printf("SKIP: Bad line length:\n%s\n", line);
@@ -84,7 +88,9 @@ static bool _try_to_add_seg(datasegment_t** ptr_root, char* line, ihex_context_t
 
 	uint32_t addr = _read_hexBE(rptr, 2);
 	rptr += 2* 2;
+#ifdef DEBUG_IHEX
 	printf("Addr %04x, ", addr);
+#endif
 
 	ihex_rtype_t type = (ihex_rtype_t) _read_hexBE(rptr, 1);
 	rptr += 2* 1;
@@ -103,14 +109,14 @@ static bool _try_to_add_seg(datasegment_t** ptr_root, char* line, ihex_context_t
 			ctx->address_offset = (uint32_t) 16 * _read_hexBE(rptr, 2);
 			return true;
 		case IHEX_Type_StaSegAddr:
+			printf("SKIP: Start address instruction not supported:\n%s\n", line);
 			return false;
-			// break;
 		case IHEX_Type_ExtLinAddr:
-			return false;
-			// break;
+			ctx->address_offset = _read_hexBE(rptr, 2) << 16;
+			return true;
 		case IHEX_Type_StaLinAddr:
+			printf("SKIP: Start address instruction not supported:\n%s\n", line);
 			return false;
-			// break;
 		default:
 			printf("Unknown record type %02x:\n%s\n", (uint8_t)type, line);
 			return false;
