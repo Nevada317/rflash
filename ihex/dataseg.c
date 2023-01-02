@@ -71,7 +71,12 @@ datasegment_t* DATASEG_Extend(datasegment_t* record, uint32_t NewLength) {
 	if (OldLength == NewLength) return record;
 
 	if (!record->Payload) OldLength = 0;
-	record->Payload = realloc(record->Payload, NewLength);
+	void* p = realloc(record->Payload, NewLength);
+	if (p) {
+		record->Payload = p;
+	} else {
+		return 0;
+	}
 	if (OldLength < NewLength) {
 		memset(record->Payload + OldLength, 0, NewLength - OldLength);
 	}
@@ -210,8 +215,9 @@ static bool _try_to_merge(datasegment_t* A) {
 	// Common case
 	if ((A->Offset + A->Length) != B->Offset) return false;
 	uint32_t OldLength = A->Length;
-	DATASEG_Extend(A, A->Length + B->Length);
-	memcpy(A->Payload + OldLength, B->Payload, B->Length);
+	datasegment_t* p = DATASEG_Extend(A, A->Length + B->Length);
+	if (!p) return false;
+	memcpy(p->Payload + OldLength, B->Payload, B->Length);
 	DATASEG_Remove(B);
 	return true;
 }
