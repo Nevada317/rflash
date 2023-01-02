@@ -74,7 +74,7 @@ datasegment_t* DATASEG_Extend(datasegment_t* record, uint32_t NewLength) {
 	void* p = realloc(record->Payload, NewLength);
 	if (p) {
 		record->Payload = p;
-	} else {
+	} else if (OldLength < NewLength) {
 		return 0;
 	}
 	if (OldLength < NewLength) {
