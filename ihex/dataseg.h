@@ -2,6 +2,7 @@
 #define _DATASEG_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct datasegment_t datasegment_t;
 
@@ -41,6 +42,9 @@ datasegment_t* DATASEG_Dealloc(datasegment_t* record);
 // NOTE: you NEED to free returned array
 datasegment_t** DATASEG_Enumerate(datasegment_t* root, uint32_t* count);
 
+// Join all segments, that are neighbours
+// Returns true if any merges were done
+bool DATASEG_Merge(datasegment_t* root);
 // Destroy non-allocated data segments from list
 datasegment_t* DATASEG_Cleanup(datasegment_t* root);
 // Removes item from list (even if it is not first or last one) and

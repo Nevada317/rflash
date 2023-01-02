@@ -9,18 +9,19 @@ datasegment_t* root;
 int main() {
 	datasegment_t* ptr;
 	ptr = DATASEG_AutoAppend(&root);
-	DATASEG_Alloc(ptr, 1, 10);
+	DATASEG_Alloc(ptr, 10, 10);
 	ptr = DATASEG_AutoAppend(&root);
-	DATASEG_Alloc(ptr, 2, 10);
+	DATASEG_Alloc(ptr, 20, 10);
 	ptr = DATASEG_AutoAppend(&root);
-	DATASEG_Alloc(ptr, 3, 10);
+	DATASEG_Alloc(ptr, 30, 10);
 	ptr = DATASEG_AutoAppend(&root);
-	// DATASEG_Alloc(ptr, 4, 10);
+	DATASEG_Alloc(ptr, 40, 10);
 	ptr = DATASEG_AutoAppend(&root);
-	DATASEG_Alloc(ptr, 5, 10);
+	DATASEG_Alloc(ptr, 55, 10);
 	ptr = DATASEG_AutoAppend(&root);
-	DATASEG_Alloc(ptr, 6, 10);
+	DATASEG_Alloc(ptr, 65, 10);
 
+	DATASEG_Merge(root);
 	// DATASEG_Cleanup(root);
 
 	datasegment_t** arrX = DATASEG_Enumerate(root, 0);

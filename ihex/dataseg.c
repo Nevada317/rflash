@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static bool _try_to_merge(datasegment_t* A);
+
 // Create new root instance on datasegment_t and return pointer to it
 datasegment_t* DATASEG_CreateRoot() {
 	return calloc(1, sizeof(datasegment_t));
@@ -127,6 +129,28 @@ datasegment_t** DATASEG_Enumerate(datasegment_t* root, uint32_t* count) {
 	return arr;
 }
 
+// Join all segments, that are neighbours
+bool DATASEG_Merge(datasegment_t* root) {
+	datasegment_t* real_root = DATASEG_GetRoot(root);
+
+	bool result = false;
+	datasegment_t* ptr1 = 0;
+	datasegment_t* ptr2 = real_root;
+	while (ptr2) {
+		if (ptr1 && ptr2) {
+			if (_try_to_merge(ptr1)) {
+				result = true;
+				ptr2 = ptr1->next;
+				continue;
+			}
+		}
+
+		ptr1 = ptr2;
+		ptr2 = ptr2->next;
+	}
+	return result;
+}
+
 // Destroy non-allocated data segments from list
 datasegment_t* DATASEG_Cleanup(datasegment_t* root) {
 	datasegment_t* real_root = DATASEG_GetRoot(root);
@@ -163,4 +187,29 @@ datasegment_t* DATASEG_Remove(datasegment_t* record) {
 	} else {
 		return next;
 	}
+}
+
+
+
+
+
+static bool _try_to_merge(datasegment_t* A) {
+	if (!A) return false;
+	datasegment_t* B = A->next;
+	if (!B) return false;
+
+	// Trivial cases
+	if (!A->Payload) return false;
+	if (!B->Payload) {
+		DATASEG_Remove(B);
+		return true;
+	}
+
+	// Common case
+	if ((A->Offset + A->Length) != B->Offset) return false;
+	uint32_t OldLength = A->Length;
+	DATASEG_Extend(A, A->Length + B->Length);
+	memcpy(A->Payload + OldLength, B->Payload, B->Length);
+	DATASEG_Remove(B);
+	return true;
 }
