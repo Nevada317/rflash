@@ -1,4 +1,5 @@
 #include "dataseg.h"
+#include "ihex.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -20,6 +21,8 @@ int main() {
 	DATASEG_Alloc(ptr, 55, 10);
 	ptr = DATASEG_AutoAppend(&root);
 	DATASEG_Alloc(ptr, 65, 10);
+
+	IHEX_AppendHex(&root, "test.hex");
 
 	DATASEG_Merge(root);
 	// DATASEG_Cleanup(root);
