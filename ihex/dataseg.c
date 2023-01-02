@@ -6,7 +6,7 @@ static bool _try_to_merge(datasegment_t* A);
 
 static bool _DATASEG_Sort(datasegment_t* root);
 static void _DATASEG_Swap(datasegment_t* B);
-
+static void _DATASEG_Splice(datasegment_t* root);
 
 // Create new root instance on datasegment_t and return pointer to it
 datasegment_t* DATASEG_CreateRoot() {
@@ -36,6 +36,21 @@ datasegment_t* DATASEG_AutoAppend(datasegment_t** ptr_root) {
 		(*ptr_root)->ptr_root = ptr_root;
 		return *ptr_root;
 	}
+}
+
+// Inserts new record after given and returns pointer to it
+datasegment_t* DATASEG_InsertAfter(datasegment_t* record) {
+	datasegment_t* A = record;
+	datasegment_t* B = calloc(1, sizeof(datasegment_t));
+	datasegment_t* C = record->next;
+
+	B->ptr_root = A->ptr_root;
+	A->next = B;
+	B->next = C;
+	if (C) C->prev = B;
+	B->prev = A;
+
+	return B;
 }
 
 // Returns real root pointer given any element of list
@@ -174,16 +189,19 @@ bool DATASEG_Sort(datasegment_t* root) {
 
 // Fuses all segments by removing all repeats
 // Returns true if any swaps were done
-// bool DATASEG_Fuse(datasegment_t* root) {
-// 	bool res = false;
-// 	datasegment_t** ptr_root = root->ptr_root;
-// 	while (true) {
-// 		DATASEG_Sort(*ptr_root);
-// 		if (!_DATASEG_Fuse(*ptr_root)) break;
-// 		res = true;
-// 	}
-// 	return res;
-// }
+bool DATASEG_Fuse(datasegment_t* root) {
+	bool res = false;
+	datasegment_t** ptr_root = root->ptr_root;
+	while (true) {
+		DATASEG_Sort(*ptr_root);
+		_DATASEG_Splice(*ptr_root);
+		DATASEG_Sort(*ptr_root);
+		// if (!_DATASEG_Fuse(*ptr_root)) break;
+		break;
+		// res = true;
+	}
+	return res;
+}
 
 // Destroy non-allocated data segments from list
 datasegment_t* DATASEG_Cleanup(datasegment_t* root) {
@@ -288,3 +306,41 @@ static void _DATASEG_Swap(datasegment_t* B) {
 	B->prev = C;
 	C->prev = A;
 }
+
+static void _DATASEG_Splice(datasegment_t* root) {
+	datasegment_t* real_root = DATASEG_GetRoot(root);
+
+	datasegment_t* walker;
+	datasegment_t* probe = real_root;
+	while (probe) {
+		uint32_t offsetA = probe->Offset;
+		uint32_t offsetB = probe->Offset + probe->Length;
+		walker = real_root;
+		while (walker) {
+			DATASEG_SplitRecord(walker, offsetB);
+			DATASEG_SplitRecord(walker, offsetA);
+			walker = walker->next;
+		}
+
+
+		probe = probe->next;
+	}
+}
+
+void DATASEG_SplitRecord(datasegment_t* record, uint32_t Offset) {
+	if (!record) return;
+	if (!record->Length) return;
+	if (record->Offset >= Offset) return;
+	if ((record->Offset + record->Length) <= Offset) return;
+
+	uint32_t LenA = Offset - record->Offset;
+	uint32_t LenB = record->Length - LenA;
+
+	datasegment_t* recordB = DATASEG_InsertAfter(record);
+	if (!recordB) return;
+	DATASEG_Alloc(recordB, Offset, LenB);
+	if (!recordB->Payload) return;
+	memcpy(recordB->Payload, record->Payload + LenA, LenB);
+	DATASEG_Extend(record, LenA);
+}
+

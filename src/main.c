@@ -19,6 +19,7 @@ int main() {
 
 	// DATASEG_Merge(root);
 	DATASEG_Sort(root);
+	DATASEG_Fuse(root);
 	// DATASEG_Merge(root);
 	// DATASEG_Cleanup(root);
 
