@@ -55,8 +55,10 @@ datasegment_t* DATASEG_GetTail(datasegment_t* record) {
 datasegment_t* DATASEG_Alloc(datasegment_t* record, uint32_t Offset, uint32_t Length) {
 	DATASEG_Dealloc(record); // If it was already allocated
 	record->Offset = Offset;
-	record->Payload = calloc(Length, 1);
-	record->Length = Length;
+	if (Length) {
+		record->Payload = calloc(Length, 1);
+	}
+	record->Length = record->Payload ? Length : 0;
 	return record;
 }
 
