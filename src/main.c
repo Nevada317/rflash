@@ -17,11 +17,7 @@ int main() {
 	ptr = DATASEG_AutoAppend(&root);
 	DATASEG_Alloc(ptr, 20, 50);
 
-	// DATASEG_Merge(root);
-	DATASEG_Sort(root);
 	DATASEG_Fuse(root);
-	// DATASEG_Merge(root);
-	// DATASEG_Cleanup(root);
 
 	datasegment_t** arrX = DATASEG_Enumerate(root, 0);
 	// DATASEG_Remove(arrX[0]);

@@ -54,8 +54,7 @@ bool DATASEG_Merge(datasegment_t* root);
 // Returns true if any swaps were done
 bool DATASEG_Sort(datasegment_t* root);
 // Fuses all segments by removing all repeats
-// Returns true if any swaps were done
-bool DATASEG_Fuse(datasegment_t* root);
+void DATASEG_Fuse(datasegment_t* root);
 // Destroy non-allocated data segments from list
 datasegment_t* DATASEG_Cleanup(datasegment_t* root);
 // Removes item from list (even if it is not first or last one) and

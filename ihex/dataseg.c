@@ -7,6 +7,7 @@ static bool _try_to_merge(datasegment_t* A);
 static bool _DATASEG_Sort(datasegment_t* root);
 static void _DATASEG_Swap(datasegment_t* B);
 static void _DATASEG_Splice(datasegment_t* root);
+static void _DATASEG_Shadow(datasegment_t* root);
 
 // Create new root instance on datasegment_t and return pointer to it
 datasegment_t* DATASEG_CreateRoot() {
@@ -189,18 +190,14 @@ bool DATASEG_Sort(datasegment_t* root) {
 
 // Fuses all segments by removing all repeats
 // Returns true if any swaps were done
-bool DATASEG_Fuse(datasegment_t* root) {
-	bool res = false;
+void DATASEG_Fuse(datasegment_t* root) {
 	datasegment_t** ptr_root = root->ptr_root;
-	while (true) {
-		DATASEG_Sort(*ptr_root);
-		_DATASEG_Splice(*ptr_root);
-		DATASEG_Sort(*ptr_root);
-		// if (!_DATASEG_Fuse(*ptr_root)) break;
-		break;
-		// res = true;
-	}
-	return res;
+	DATASEG_Sort(*ptr_root);
+	_DATASEG_Splice(*ptr_root);
+	DATASEG_Sort(*ptr_root);
+	_DATASEG_Shadow(*ptr_root);
+	DATASEG_Sort(*ptr_root);
+	DATASEG_Merge(*ptr_root);
 }
 
 // Destroy non-allocated data segments from list
@@ -288,9 +285,6 @@ static bool _DATASEG_Sort(datasegment_t* root) {
 	return false;
 }
 
-// static bool _DATASEG_Fuse(datasegment_t* root) {
-// }
-
 static void _DATASEG_Swap(datasegment_t* B) {
 	// Swaps B with next
 	datasegment_t* A = B->prev;
@@ -325,6 +319,23 @@ static void _DATASEG_Splice(datasegment_t* root) {
 
 		probe = probe->next;
 	}
+}
+
+static void _DATASEG_Shadow(datasegment_t* root) {
+	datasegment_t* real_root = DATASEG_GetRoot(root);
+
+	datasegment_t* probe = real_root;
+	while (probe) {
+		if (probe->prev) {
+			if ((probe->Offset == probe->prev->Offset) && \
+				(probe->Length == probe->prev->Length)) {
+				DATASEG_Remove(probe->prev);
+				continue;
+			}
+		}
+		probe = probe->next;
+	}
+
 }
 
 void DATASEG_SplitRecord(datasegment_t* record, uint32_t Offset) {
