@@ -1,3 +1,10 @@
 *.o
 rflash
-rflash_unstripped
+rflash_debug
+rflash_prod_unstripped
+rflash_prof
+rflash_gprof
+rflash_arcs
+
+gmon.out
+*.gcda
