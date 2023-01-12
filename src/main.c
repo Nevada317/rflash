@@ -1,5 +1,6 @@
 #include "dataseg.h"
 #include "ihex.h"
+#include "args.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -48,12 +49,13 @@ static void DisplayDebug1(char chr, char * string) {
 }
 
 int main(int argc, char *argv[]) {
+	(void)argc;
 
 	ARGS_ParseArgs(argv, &AppName, &DisplayDebug1);
 	printf("App name: %s\n", AppName);
 
-	IHEX_AppendHex(&root, "test.hex");
-	DATASEG_Fuse(root);
+	// IHEX_AppendHex(&root, "test.hex");
+	// DATASEG_Fuse(root);
 	// debug();
 
 	return 0;
