@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+char* AppName = NULL;
+
 datasegment_t* root;
 
 /*
@@ -37,8 +39,19 @@ static void debug() {
 }
 */
 
+static void DisplayDebug1(char chr, char * string) {
+	if (!chr) {
+		printf("End of arguments list\n");
+		return;
+	}
+	printf("Argument: %c=%s\n", chr, string);
+}
 
-int main() {
+int main(int argc, char *argv[]) {
+
+	ARGS_ParseArgs(argv, &AppName, &DisplayDebug1);
+	printf("App name: %s\n", AppName);
+
 	IHEX_AppendHex(&root, "test.hex");
 	DATASEG_Fuse(root);
 	// debug();
