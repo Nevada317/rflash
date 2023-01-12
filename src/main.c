@@ -6,7 +6,7 @@
 
 datasegment_t* root;
 
-
+/*
 static void debug() {
 	uint32_t count = 555;
 	datasegment_t** arr = DATASEG_Enumerate(root, &count);
@@ -35,24 +35,13 @@ static void debug() {
 	// printf(" Record %d: %08x\n", count, (uint32_t) arr[count]);
 	free(arr);
 }
-
+*/
 
 
 int main() {
-	datasegment_t* ptr;
-
 	IHEX_AppendHex(&root, "test.hex");
 	DATASEG_Fuse(root);
-	debug();
-
-	ptr = DATASEG_AutoAppend(&root);
-	DATASEG_Alloc(ptr, 10, 10);
-	memset(ptr->Payload, 0x11, ptr->Length);
-	// ptr = DATASEG_AutoAppend(&root);
-	// DATASEG_Alloc(ptr, 20, 50);
-
-	DATASEG_Fuse(root);
-	debug();
+	// debug();
 
 	return 0;
 }
