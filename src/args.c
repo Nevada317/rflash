@@ -1,7 +1,6 @@
 #include "args.h"
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 static void SetAppName(char** AppName, char* value) {
 	if (!AppName) return;
@@ -23,7 +22,6 @@ void ARGS_ParseArgs(char *argv[], char** AppName, bool (*cb_arg)(char, char*)) {
 		char* curarg;
 		char letter = ' ';
 		while ((curarg = argv[++i])) {
-			// printf("Next arg: %s\n", curarg);
 			if (curarg[0]=='-') {
 				j = 0;
 				while ((letter = curarg[++j])) {
@@ -33,13 +31,20 @@ void ARGS_ParseArgs(char *argv[], char** AppName, bool (*cb_arg)(char, char*)) {
 				}
 			}
 			if (letter) {
-				curarg = argv[++i];
-				if (!curarg) break;
-				// If next argument starts with dash
-				if (curarg[0] == '-') {
-					// Undo arg consumption
-					i--;
+				if (curarg[j] && curarg[j+1]) {
+					curarg = curarg+j+1;
 				} else {
+					// Consume next argument in list
+					curarg = argv[++i];
+					if (!curarg) break;
+					// If next argument starts with dash
+					if (curarg[0] == '-') {
+						// Undo arg consumption
+						i--;
+						curarg = 0;
+					}
+				}
+				if (curarg && curarg[0]) {
 					cb_arg(letter, curarg);
 				}
 			}

@@ -46,7 +46,7 @@ static bool DisplayDebug1(char chr, char * string) {
 		printf("End of arguments list\n");
 		return false;
 	}
-	if (chr != ' ' && !string) {
+	if (chr != ' ' && !string && chr != 'e') {
 		return false;
 	}
 
