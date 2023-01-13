@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static arg_key_t* KeysBuffer = NULL;
+
 static void SetAppName(char** AppName, char* value) {
 	if (!AppName) return;
 	if (*AppName) {
@@ -52,4 +54,28 @@ void ARGS_ParseArgs(char *argv[], char** AppName, bool (*cb_arg)(char, char*)) {
 		}
 	}
 	cb_arg('\0', 0);
+}
+
+static bool _ARGS_InternalCallback(char key, char* arg) {
+	if (!KeysBuffer) return true;
+	int i = 0;
+	arg_key_t* ptr;
+	while ((ptr = &KeysBuffer[i++])->handler) {
+		if (ptr->key == key) {
+			if (ptr->needs_arg && !arg) return false;
+			if (ptr->handler) ptr->handler(key, arg);
+			return true;
+		}
+	}
+	// Tag not Found in list, default to 0'th item
+	ptr = &KeysBuffer[0];
+	if (ptr->handler) ptr->handler(key, arg);
+	return true;
+}
+
+void ARGS_ParseArgsByList(char *argv[], char** AppName, arg_key_t Keys[]) {
+	KeysBuffer = Keys;
+	if (!KeysBuffer) return;
+	ARGS_ParseArgs(argv, AppName, _ARGS_InternalCallback);
+	KeysBuffer = NULL;
 }

@@ -41,6 +41,23 @@ static void debug() {
 }
 */
 
+static void arg_1(char key, char* arg) {
+	(void)key;
+	(void)arg;
+	if (!key) key = '?';
+	printf("KEY %c = %s\n", key, arg);
+}
+
+arg_key_t Keys[] = {
+	{.needs_arg = true, .handler = arg_1},
+	// {.key = 'c', .needs_arg = true,  .handler = arg_1},
+	{.key = 'p', .needs_arg = true,  .handler = arg_1},
+	{.key = ' ', .needs_arg = true,  .handler = arg_1},
+	{.key = 'U', .needs_arg = true,  .handler = arg_1},
+	{.key = 'e', .needs_arg = false, .handler = arg_1},
+	{0}
+};
+
 static bool DisplayDebug1(char chr, char * string) {
 	if (!chr) {
 		printf("End of arguments list\n");
@@ -58,6 +75,8 @@ int main(int argc, char *argv[]) {
 	(void)argc;
 
 	ARGS_ParseArgs(argv, &AppName, &DisplayDebug1);
+	printf("App name: %s\n", AppName);
+	ARGS_ParseArgsByList(argv, &AppName, Keys);
 	printf("App name: %s\n", AppName);
 
 	// IHEX_AppendHex(&root, "test.hex");
