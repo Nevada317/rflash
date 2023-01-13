@@ -58,24 +58,9 @@ arg_key_t Keys[] = {
 	{0}
 };
 
-static bool DisplayDebug1(char chr, char * string) {
-	if (!chr) {
-		printf("End of arguments list\n");
-		return false;
-	}
-	if (chr != ' ' && !string && chr != 'e') {
-		return false;
-	}
-
-	printf("Argument: %c=%s\n", chr, string);
-	return true;
-}
-
 int main(int argc, char *argv[]) {
 	(void)argc;
 
-	ARGS_ParseArgs(argv, &AppName, &DisplayDebug1);
-	printf("App name: %s\n", AppName);
 	ARGS_ParseArgsByList(argv, &AppName, Keys);
 	printf("App name: %s\n", AppName);
 
