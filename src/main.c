@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 char* AppName = NULL;
 
@@ -40,12 +41,17 @@ static void debug() {
 }
 */
 
-static void DisplayDebug1(char chr, char * string) {
+static bool DisplayDebug1(char chr, char * string) {
 	if (!chr) {
 		printf("End of arguments list\n");
-		return;
+		return false;
 	}
+	if (chr != ' ' && !string) {
+		return false;
+	}
+
 	printf("Argument: %c=%s\n", chr, string);
+	return true;
 }
 
 int main(int argc, char *argv[]) {
