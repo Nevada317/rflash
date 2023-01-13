@@ -22,7 +22,7 @@ void ARGS_ParseArgs(char *argv[], char** AppName, bool (*cb_arg)(char, char*)) {
 		int i = 0;
 		int j = 0;
 		char* curarg;
-		char letter = ' ';
+		char letter;
 		while ((curarg = argv[++i])) {
 			if (curarg[0]=='-') {
 				j = 0;
@@ -31,8 +31,6 @@ void ARGS_ParseArgs(char *argv[], char** AppName, bool (*cb_arg)(char, char*)) {
 						break;
 					}
 				}
-			}
-			if (letter) {
 				if (curarg[j] && curarg[j+1]) {
 					curarg = curarg+j+1;
 				} else {
@@ -48,9 +46,11 @@ void ARGS_ParseArgs(char *argv[], char** AppName, bool (*cb_arg)(char, char*)) {
 				}
 				if (curarg && curarg[0]) {
 					cb_arg(letter, curarg);
+					letter = 0;
 				}
+			} else {
+				cb_arg(letter, curarg);
 			}
-			letter = ' ';
 		}
 	}
 	cb_arg('\0', 0);
@@ -70,7 +70,7 @@ static bool _ARGS_InternalCallback(char key, char* arg) {
 	// Tag not Found in list, default to 0'th item
 	ptr = &KeysBuffer[0];
 	if (ptr->handler) ptr->handler(key, arg);
-	return true;
+	return false;
 }
 
 void ARGS_ParseArgsByList(char *argv[], char** AppName, arg_key_t Keys[]) {
