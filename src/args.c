@@ -22,7 +22,7 @@ void ARGS_ParseArgs(char *argv[], char** AppName, bool (*cb_arg)(char, char*)) {
 		int i = 0;
 		int j = 0;
 		char* curarg;
-		char letter;
+		char letter = 0;
 		while ((curarg = argv[++i])) {
 			if (curarg[0]=='-') {
 				j = 0;
