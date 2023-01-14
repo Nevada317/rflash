@@ -52,6 +52,7 @@ static void debug() {
 
 static void arg_e(char key, char* arg) {
 	if (key != 'e') return;
+	if (Failed) return;
 	(void)arg;
 	mem_task_t* newrecord = QUEUE_NewRecord(&tasks_root);
 	newrecord->memory_operation = MEM_OPER_ERASE;
@@ -59,10 +60,12 @@ static void arg_e(char key, char* arg) {
 
 static void arg_p(char key, char* arg) {
 	if (key != 'p') return;
+	if (Failed) return;
 	AVR_Device = AVR_DEVICE_Search(arg);
 
 	if (!AVR_Device) {
 		printf("Error parsing argument: -%c %s\nUnknown chip\n", key, arg);
+		Failed = true;
 		return;
 	}
 	if (AVR_Device->name) {
@@ -72,6 +75,7 @@ static void arg_p(char key, char* arg) {
 
 static void arg_U(char key, char* arg) {
 	if ((key != 'U') || !arg) return;
+	if (Failed) return;
 	// printf("KEY %c = %s\n", key, arg);
 
 	mem_task_t proto = {0};
@@ -144,7 +148,7 @@ static void arg_U(char key, char* arg) {
 				}
 			}
 		}
-		IHEX_AppendHex(newrecord->root_ptr, newrecord->arg_string);
+		if (!IHEX_AppendHex(newrecord->root_ptr, newrecord->arg_string)) Failed = true;
 	}
 
 
@@ -163,6 +167,7 @@ static void check_queue(mem_task_t* queue) {
 	mem_task_t* task = queue;
 	mem_task_t* prev = 0;
 	while (task) {
+		if (Failed) break;
 		if (task->continuation) {
 			task->root_ptr = 0;
 			if (prev) {
@@ -182,6 +187,7 @@ static void check_queue(mem_task_t* queue) {
 	}
 }
 static void arg_DUMMY(char key, char* arg) {
+	if (Failed) return;
 	if (!key) key = '?';
 	printf("Ignoring argument %c = %s\n", key, arg);
 }
@@ -200,11 +206,16 @@ int main(int argc, char *argv[]) {
 	(void)argc;
 
 	ARGS_ParseArgsByList(argv, &AppName, Keys);
-	printf("App name: %s\n", AppName);
-	check_queue(tasks_root);
+	if (!Failed) check_queue(tasks_root);
 
 	// IHEX_AppendHex(&root, "test.hex");
 	// debug();
+
+	// if (!Failed)
+
+	if (Failed) {
+		printf("\n\nRefusing to continue because of errors\n\n");
+	}
 
 	QUEUE_Destroy(&tasks_root);
 	DATASEG_Destroy(&global_root_EEPROM);
