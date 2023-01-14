@@ -189,7 +189,32 @@ static void check_queue(mem_task_t* queue) {
 	}
 }
 
+static void add_task_to_rfp_queue(mem_task_t* task) {
+	rfp_list_t* rfp_list_item = 0;
+	rfp_buffer_t* rfp_buf = 0;
+	if (task->isFuse) {
+		printf("Operation: fuse!\n");
+		rfp_list_item = RFP_LIST_NewRecord(&rfp_queue);
+		rfp_buf = &rfp_list_item->Buffer;
+		rfp_buf->Protocol = RFP_PROTOCOL_AVR;
+		// rfp_buf->Operation = RFP_OPER_Release;
+	} else if (task->isArray) {
+		printf("Operation: array!\n");
+
+	} else if (task->memory_operation == MEM_OPER_ERASE) {
+		printf("Operation: chip erase!\n");
+		rfp_list_item = RFP_LIST_NewRecord(&rfp_queue);
+		rfp_buf = &rfp_list_item->Buffer;
+		rfp_buf->Protocol = RFP_PROTOCOL_AVR;
+		rfp_buf->Operation = RFP_OPER_Erase;
+	} else {
+		printf("Unknown operation in task queue!\n");
+		Failed = true;
+	}
+}
+
 static void fill_rfp_queue(mem_task_t* tasks_queue) {
+	if (Failed) return;;
 	printf("fill_rfp_queue called\n");
 	rfp_list_t* rfp_list_item = 0;
 	rfp_buffer_t* rfp_buf = 0;
@@ -209,10 +234,17 @@ static void fill_rfp_queue(mem_task_t* tasks_queue) {
 
 	mem_task_t* task = tasks_queue;
 	while (task) {
+		if (Failed) break;
 		printf("fill_rfp_queue handling task %p\n", task);
-		// if (task)
+		add_task_to_rfp_queue(task);
 		task = task -> next;
 	}
+
+	// Release bus
+	rfp_list_item = RFP_LIST_NewRecord(&rfp_queue);
+	rfp_buf = &rfp_list_item->Buffer;
+	rfp_buf->Protocol = RFP_PROTOCOL_AVR;
+	rfp_buf->Operation = RFP_OPER_Release;
 }
 
 static void arg_DUMMY(char key, char* arg) {

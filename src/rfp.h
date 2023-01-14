@@ -82,7 +82,7 @@ typedef enum __attribute__((__packed__)) {
 	RFP_OPER_Write    = 0x08U, // Write given page
 	RFP_OPER_Verify   = 0x10U, // Verify written page
 	RFP_OPER_Read     = 0x20U, // Read whole page
-	// Bit 6 is reserved
+	RFP_OPER_Release  = 0x40U, // Release target/bus
 	RFP_OPER_LL       = 0x80U, // Perform low-level operation
 } rfp_operation_t;
 
