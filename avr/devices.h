@@ -21,11 +21,21 @@ typedef struct avr_specs_t {
 	uint32_t FLASH_PageSize;
 } avr_specs_t;
 
+typedef struct avr_offset_t {
+	uint32_t FuseL;
+	uint32_t FuseH;
+	uint32_t FuseE;
+	uint32_t Lock;
+	uint32_t Flash;
+	uint32_t EEPROM;
+} avr_offset_t;
+
 typedef struct avr_device_t {
 	char* id;
 	char* name;
 	avr_signature_t signature;
 	avr_specs_t specs;
+	avr_offset_t off;
 } avr_device_t;
 
 // Returns pointer to static RAM

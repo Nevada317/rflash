@@ -10,11 +10,13 @@ static const avr_device_t AvailableParts[] = {
 		},
 		.specs = {
 			.FLASH_Size = 16 * 1024,
+			.FLASH_PageSize = 32, // For debug only
 		}
 	},
 	{0} // End of array
 };
 
 const avr_device_t* AVR_DEVICE_Search(char* id) {
+	(void)id;
 	return &AvailableParts[0];
 }

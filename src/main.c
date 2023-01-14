@@ -189,17 +189,155 @@ static void check_queue(mem_task_t* queue) {
 	}
 }
 
+static bool transfer_segment_to_page(rfp_buffer_t* page, datasegment_t* segment) {
+	if (!page) return false;
+	if (!segment) return false;
+	uint16_t PageSize = page->PayloadSize;
+	if (!PageSize) PageSize = 256;
+
+	if (segment->Offset >= (page->Address + PageSize)) return false;
+	if ((segment->Offset + segment->Length) <= page->Address) return false;
+
+	// TODO: Copy data
+	return true;
+}
+
+static void DemoPrintPage(rfp_buffer_t* buffer) {
+	printf("RFP Segment: from %08x to %08x\n", buffer->Address, buffer->Address + buffer->PayloadSize);
+}
+
 static void add_task_to_rfp_queue(mem_task_t* task) {
 	rfp_list_t* rfp_list_item = 0;
 	rfp_buffer_t* rfp_buf = 0;
+	rfp_operation_t oper = 0;
+
+	if (task->memory_operation == MEM_OPER_ERASE) {
+		oper = RFP_OPER_Erase;
+	} else if (task->memory_operation == MEM_OPER_WRITE) {
+		oper = RFP_OPER_Write;
+	} else if (task->memory_operation == MEM_OPER_VERIFY) {
+		oper = RFP_OPER_Verify;
+	} else if (task->memory_operation == MEM_OPER_READ) {
+		oper = RFP_OPER_Read;
+		// TODO: do something for read!
+		printf("Operation: read not supported!\n");
+		Failed = true;
+		return;
+	}
+
 	if (task->isFuse) {
 		printf("Operation: fuse!\n");
 		rfp_list_item = RFP_LIST_NewRecord(&rfp_queue);
 		rfp_buf = &rfp_list_item->Buffer;
 		rfp_buf->Protocol = RFP_PROTOCOL_AVR;
-		// rfp_buf->Operation = RFP_OPER_Release;
+		rfp_buf->Operation = oper;
+		rfp_buf->PayloadSize = 1;
+		rfp_buf->Payload[0] = task->arg_byte;
+		if (task->memory_type == MEM_LFUSE) {
+			rfp_buf->Address = OFFSET_FUSE + AVR_Device->off.FuseL;
+		} else if (task->memory_type == MEM_HFUSE) {
+			rfp_buf->Address = OFFSET_FUSE + AVR_Device->off.FuseH;
+		} else if (task->memory_type == MEM_EFUSE) {
+			rfp_buf->Address = OFFSET_FUSE + AVR_Device->off.FuseE;
+		} else if (task->memory_type == MEM_LOCK) {
+			rfp_buf->Address = OFFSET_FUSE + AVR_Device->off.Lock;
+		} else {
+			printf("Unknown fuse!\n");
+			Failed = true;
+			return;
+		}
 	} else if (task->isArray) {
 		printf("Operation: array!\n");
+		uint32_t PageSize;
+		uint32_t MemoryMaxAddr;
+		uint32_t MemoryOffset;
+		if (task->memory_type == MEM_FLASH) {
+			PageSize = AVR_Device->specs.FLASH_PageSize;
+			MemoryMaxAddr = AVR_Device->specs.FLASH_Size;
+			MemoryOffset = OFFSET_FLASH + AVR_Device->off.Flash;
+		} else if (task->memory_type == MEM_EEPROM) {
+			PageSize = AVR_Device->specs.EEPROM_PageSize;
+			MemoryMaxAddr = AVR_Device->specs.EEPROM_Size;
+			MemoryOffset = OFFSET_EEP + AVR_Device->off.EEPROM;
+		} else {
+			printf("Unknown memory type!\n");
+			Failed = true;
+			return;
+		}
+		if (!MemoryMaxAddr) {
+			printf("Trying to write to non-existent memory!\n");
+			Failed = true;
+			return;
+		}
+		// If memory exists and is not page-orinented, assume it is 1-byte pages
+		if (!PageSize) {PageSize = 1;}
+		if (PageSize > 256) {
+			printf("Too large page size (0x%x)!\n", PageSize);
+			Failed = true;
+			return;
+		}
+		const uint32_t PageMask = ~(PageSize-1);
+		datasegment_t* segment_cur = *(task->root_ptr);
+		if (!segment_cur) {
+			printf("Segment data not found!\n");
+			Failed = true;
+			return;
+		}
+
+		uint32_t CurrentOffset = 0;
+		bool MatchCur;
+		bool MatchNext;
+		bool createnewstart = true;
+
+		datasegment_t* segment_runner = 0;
+
+		while (segment_cur) {
+			if (createnewstart) {
+				if ((segment_cur->Offset & PageMask) < CurrentOffset) {
+					// Segment already covered
+					segment_cur = segment_cur->next;
+					continue;
+				}
+				CurrentOffset = segment_cur->Offset & PageMask;
+				createnewstart = false;
+			}
+
+			rfp_list_item = RFP_LIST_NewRecord(&rfp_queue);
+			rfp_buf = &rfp_list_item->Buffer;
+			rfp_buf->Protocol = RFP_PROTOCOL_AVR;
+			rfp_buf->Operation = oper;
+			rfp_buf->PayloadSize = PageSize & 0xFF;
+			rfp_buf->Address = CurrentOffset;
+
+			memset(rfp_buf->Payload, 0xFF, sizeof(rfp_buf->Payload));
+			MatchCur = transfer_segment_to_page(rfp_buf, segment_cur);
+			segment_runner = segment_cur;
+			MatchNext = false;
+			while ((segment_runner = segment_runner->next)) {
+				if (!transfer_segment_to_page(rfp_buf, segment_runner)) break;
+				MatchNext = true;
+			}
+
+			rfp_buf->Address += MemoryOffset;
+
+			DemoPrintPage(rfp_buf);
+
+			CurrentOffset += PageSize;
+
+			if (CurrentOffset >= (segment_cur->Offset + segment_cur->Length)) {
+				segment_cur = segment_cur->next;
+				MatchCur = false;
+			}
+			if (!MatchCur && !MatchNext) {
+				createnewstart = true;
+			}
+		}
+
+
+		// NotFullPage = ((segment_cur->Offset & ~PageMask) != 0); // Left align mismatch
+
+
+
 
 	} else if (task->memory_operation == MEM_OPER_ERASE) {
 		printf("Operation: chip erase!\n");
