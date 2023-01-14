@@ -158,6 +158,7 @@ datasegment_t** DATASEG_Enumerate(datasegment_t* root, uint32_t* count) {
 
 // Join all segments, that are neighbours
 bool DATASEG_Merge(datasegment_t* root) {
+	if (!root) return false;
 	datasegment_t* real_root = DATASEG_GetRoot(root);
 
 	bool result = false;
@@ -191,6 +192,7 @@ bool DATASEG_Sort(datasegment_t* root) {
 // Fuses all segments by removing all repeats
 // Returns true if any swaps were done
 void DATASEG_Fuse(datasegment_t* root) {
+	if (!root) return;
 	datasegment_t** ptr_root = root->ptr_root;
 	DATASEG_Sort(*ptr_root);
 	_DATASEG_Splice(*ptr_root);
@@ -202,6 +204,7 @@ void DATASEG_Fuse(datasegment_t* root) {
 
 // Destroy non-allocated data segments from list
 datasegment_t* DATASEG_Cleanup(datasegment_t* root) {
+	if (!root) return 0;
 	datasegment_t* real_root = DATASEG_GetRoot(root);
 	datasegment_t* ptr = real_root;
 	while (ptr) {
