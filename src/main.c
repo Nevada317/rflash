@@ -2,6 +2,7 @@
 #include "ihex.h"
 #include "args.h"
 #include "queue_logic.h"
+#include "avr/devices.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -14,6 +15,7 @@ mem_task_t* tasks_root = 0;
 datasegment_t* global_root_FLASH = 0;
 datasegment_t* global_root_EEPROM = 0;
 
+const avr_device_t* AVR_Device = 0;
 
 /*
 static void debug() {
@@ -53,6 +55,18 @@ static void arg_e(char key, char* arg) {
 	newrecord->memory_operation = MEM_OPER_ERASE;
 }
 
+static void arg_p(char key, char* arg) {
+	if (key != 'p') return;
+	AVR_Device = AVR_DEVICE_Search(arg);
+
+	if (!AVR_Device) {
+		printf("Error parsing argument: -%c %s\nUnknown chip\n", key, arg);
+		return;
+	}
+	if (AVR_Device->name) {
+		printf("Selected chip: %s\n", AVR_Device->name);
+	}
+}
 
 static void arg_U(char key, char* arg) {
 	if ((key != 'U') || !arg) return;
@@ -171,13 +185,12 @@ static void arg_DUMMY(char key, char* arg) {
 }
 
 arg_key_t Keys[] = {
-	{.needs_arg = true, .handler = arg_1},
-	// {.key = 'c', .needs_arg = true,  .handler = arg_1},
+	{.needs_arg = true, .handler = arg_1}, // Default handler
 	{.key = 'c', .needs_arg = true,  .handler = arg_DUMMY}, // Ignore
-	{.key = 'p', .needs_arg = true,  .handler = arg_DUMMY}, // Ignore
 	{.key = 'B', .needs_arg = true,  .handler = arg_DUMMY}, // Ignore
-	{.key = 'U', .needs_arg = true,  .handler = arg_U},
-	{.key = 'e', .needs_arg = false, .handler = arg_e},
+	{.key = 'p', .needs_arg = true,  .handler = arg_p}, // Part
+	{.key = 'U', .needs_arg = true,  .handler = arg_U}, // Command
+	{.key = 'e', .needs_arg = false, .handler = arg_e}, // Chip erase
 	{0}
 };
 
