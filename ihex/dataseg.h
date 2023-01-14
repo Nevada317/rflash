@@ -61,4 +61,8 @@ datasegment_t* DATASEG_Cleanup(datasegment_t* root);
 // returns pointer to prev (or next) item
 datasegment_t* DATASEG_Remove(datasegment_t* record);
 
+// Destructor (consumes pointer to root)
+// Clears variable that is pointed to by ptr_root
+void DATASEG_Destroy(datasegment_t** ptr_root);
+
 #endif /* _DATASEG_H */

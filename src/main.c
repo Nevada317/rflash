@@ -17,6 +17,8 @@ datasegment_t* global_root_EEPROM = 0;
 
 const avr_device_t* AVR_Device = 0;
 
+static bool Failed = false;
+
 /*
 static void debug() {
 	uint32_t count = 555;
@@ -205,6 +207,9 @@ int main(int argc, char *argv[]) {
 	// debug();
 
 	QUEUE_Destroy(&tasks_root);
-	return 0;
+	DATASEG_Destroy(&global_root_EEPROM);
+	DATASEG_Destroy(&global_root_FLASH);
+
+	return Failed ? 1 : 0;
 }
 

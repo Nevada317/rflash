@@ -238,7 +238,17 @@ datasegment_t* DATASEG_Remove(datasegment_t* record) {
 	}
 }
 
+void DATASEG_Destroy(datasegment_t** ptr_root) {
+	if (!ptr_root) return;
+	if (!(*ptr_root)) return;
 
+	datasegment_t* root = DATASEG_GetRoot(*ptr_root);
+	while (root) {
+		root = DATASEG_Remove(root);
+	}
+
+	*ptr_root = 0;
+}
 
 
 
