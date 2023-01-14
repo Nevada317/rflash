@@ -8,3 +8,5 @@ rflash_arcs
 
 gmon.out
 *.gcda
+
+*.kate-swp
