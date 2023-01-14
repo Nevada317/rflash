@@ -46,6 +46,13 @@ static void debug() {
 }
 */
 
+static void arg_e(char key, char* arg) {
+	if (key != 'e') return;
+	(void)arg;
+	mem_task_t* newrecord = QUEUE_NewRecord(&tasks_root);
+	newrecord->memory_operation = MEM_OPER_ERASE;
+}
+
 
 static void arg_U(char key, char* arg) {
 	if ((key != 'U') || !arg) return;
@@ -169,9 +176,8 @@ arg_key_t Keys[] = {
 	{.key = 'c', .needs_arg = true,  .handler = arg_DUMMY}, // Ignore
 	{.key = 'p', .needs_arg = true,  .handler = arg_DUMMY}, // Ignore
 	{.key = 'B', .needs_arg = true,  .handler = arg_DUMMY}, // Ignore
-	{.key = ' ', .needs_arg = true,  .handler = arg_1},
 	{.key = 'U', .needs_arg = true,  .handler = arg_U},
-	{.key = 'e', .needs_arg = false, .handler = arg_1},
+	{.key = 'e', .needs_arg = false, .handler = arg_e},
 	{0}
 };
 
