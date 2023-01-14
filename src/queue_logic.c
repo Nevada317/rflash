@@ -24,7 +24,7 @@ void QUEUE_Destroy(mem_task_t** root_ptr) {
 	while (*root_ptr) {
 		mem_task_t* next = (*root_ptr)->next;
 		if ((*root_ptr)->arg_string) free(((*root_ptr)->arg_string));
-		if ((*root_ptr)->root_own) free(((*root_ptr)->root_own));
+		if ((*root_ptr)->root_own) DATASEG_Destroy(&(*root_ptr)->root_own);
 		free(*root_ptr);
 		*root_ptr=next;
 	}
