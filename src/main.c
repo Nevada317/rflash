@@ -121,8 +121,6 @@ static void arg_U(char key, char* arg) {
 			}
 		}
 		IHEX_AppendHex(newrecord->root_ptr, newrecord->arg_string);
-		// TODO: Move fuse to real execution
-		DATASEG_Fuse(*(newrecord->root_ptr));
 	}
 
 
@@ -135,6 +133,22 @@ static void arg_1(char key, char* arg) {
 	(void)arg;
 	if (!key) key = '?';
 	printf("KEY %c = %s\n", key, arg);
+}
+
+static void check_queue(mem_task_t* queue) {
+	mem_task_t* task = queue;
+	while (task) {
+		if (task->continuation) {
+			task->root_ptr = 0;
+		}
+		if (task->root_ptr) {
+			DATASEG_Fuse(*(task->root_ptr));
+		}
+
+
+
+		task = task -> next;
+	}
 }
 
 arg_key_t Keys[] = {
@@ -152,6 +166,7 @@ int main(int argc, char *argv[]) {
 
 	ARGS_ParseArgsByList(argv, &AppName, Keys);
 	printf("App name: %s\n", AppName);
+	check_queue(tasks_root);
 
 	// IHEX_AppendHex(&root, "test.hex");
 	debug();
