@@ -1,6 +1,7 @@
 #include "dataseg.h"
 #include "ihex.h"
 #include "args.h"
+#include "rfp.h"
 #include "queue_logic.h"
 #include "avr/devices.h"
 #include <stdio.h>
@@ -11,6 +12,7 @@
 char* AppName = NULL;
 
 mem_task_t* tasks_root = 0;
+rfp_list_t* rfp_queue = 0;
 
 datasegment_t* global_root_FLASH = 0;
 datasegment_t* global_root_EEPROM = 0;
@@ -18,6 +20,8 @@ datasegment_t* global_root_EEPROM = 0;
 const avr_device_t* AVR_Device = 0;
 
 static bool Failed = false;
+
+static bool SkipSignatureCheck = false;
 
 /*
 static void debug() {
@@ -180,12 +184,37 @@ static void check_queue(mem_task_t* queue) {
 		if (task->root_ptr) {
 			DATASEG_Fuse(*(task->root_ptr));
 		}
-
-
 		prev = task;
 		task = task -> next;
 	}
 }
+
+static void fill_rfp_queue(mem_task_t* tasks_queue) {
+	printf("fill_rfp_queue called\n");
+	rfp_list_t* rfp_list_item = 0;
+	rfp_buffer_t* rfp_buf = 0;
+
+	if (!SkipSignatureCheck && AVR_Device->signature.Length) {
+		rfp_list_item = RFP_LIST_NewRecord(&rfp_queue);
+		if (!rfp_list_item) {
+			Failed = true;
+			return;
+		}
+		rfp_buf = &rfp_list_item->Buffer;
+		rfp_buf->Protocol = RFP_PROTOCOL_AVR;
+		rfp_buf->PayloadSize = AVR_Device->signature.Length;
+		memcpy(rfp_buf->Payload, AVR_Device->signature.Value, rfp_buf->PayloadSize);
+		rfp_buf->Operation = RFP_OPER_SigCheck;
+	}
+
+	mem_task_t* task = tasks_queue;
+	while (task) {
+		printf("fill_rfp_queue handling task %p\n", task);
+		// if (task)
+		task = task -> next;
+	}
+}
+
 static void arg_DUMMY(char key, char* arg) {
 	if (Failed) return;
 	if (!key) key = '?';
@@ -207,6 +236,7 @@ int main(int argc, char *argv[]) {
 
 	ARGS_ParseArgsByList(argv, &AppName, Keys);
 	if (!Failed) check_queue(tasks_root);
+	if (!Failed) fill_rfp_queue(tasks_root);
 
 	// IHEX_AppendHex(&root, "test.hex");
 	// debug();

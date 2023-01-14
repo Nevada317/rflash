@@ -107,10 +107,20 @@ typedef struct  __attribute__((packed)) rfp_buffer_t {
 	uint32_t Address;
 	rfp_operation_t Operation;
 	rfp_protocol_t Protocol;
-	uint8_t Signature[4];
 
 	uint16_t CRC;
 } rfp_buffer_t;
 
+typedef struct rfp_list_t rfp_list_t;
+struct rfp_list_t {
+	rfp_list_t* next;
+	rfp_list_t* root;
+	uint32_t index;
+	uint32_t count; // Valid only for root record
+
+	rfp_buffer_t Buffer;
+};
+
+rfp_list_t* RFP_LIST_NewRecord(rfp_list_t** root_ptr);
 
 #endif /* _RFP_COMMON_H */
