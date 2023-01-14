@@ -46,7 +46,7 @@ static void arg_U(char key, char* arg) {
 	if ((key != 'U') || !arg) return;
 	// printf("KEY %c = %s\n", key, arg);
 
-	mem_task_t proto;
+	mem_task_t proto = {0};
 	char* string_copy = strdup(arg);
 	char* arg_memory = strtok(string_copy, ":"); // Memory name
 	char* arg_oper   = strtok(NULL, ":"); // Operation
