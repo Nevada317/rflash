@@ -15,7 +15,7 @@ datasegment_t* global_root_FLASH = 0;
 datasegment_t* global_root_EEPROM = 0;
 
 
-
+/*
 static void debug() {
 	uint32_t count = 555;
 	datasegment_t** arr = DATASEG_Enumerate(global_root_FLASH, &count);
@@ -44,6 +44,7 @@ static void debug() {
 	// printf(" Record %d: %08x\n", count, (uint32_t) arr[count]);
 	free(arr);
 }
+*/
 
 
 static void arg_U(char key, char* arg) {
@@ -157,11 +158,17 @@ static void check_queue(mem_task_t* queue) {
 		task = task -> next;
 	}
 }
+static void arg_DUMMY(char key, char* arg) {
+	if (!key) key = '?';
+	printf("Ignoring argument %c = %s\n", key, arg);
+}
 
 arg_key_t Keys[] = {
 	{.needs_arg = true, .handler = arg_1},
 	// {.key = 'c', .needs_arg = true,  .handler = arg_1},
-	{.key = 'p', .needs_arg = true,  .handler = arg_1},
+	{.key = 'c', .needs_arg = true,  .handler = arg_DUMMY}, // Ignore
+	{.key = 'p', .needs_arg = true,  .handler = arg_DUMMY}, // Ignore
+	{.key = 'B', .needs_arg = true,  .handler = arg_DUMMY}, // Ignore
 	{.key = ' ', .needs_arg = true,  .handler = arg_1},
 	{.key = 'U', .needs_arg = true,  .handler = arg_U},
 	{.key = 'e', .needs_arg = false, .handler = arg_1},
@@ -176,7 +183,7 @@ int main(int argc, char *argv[]) {
 	check_queue(tasks_root);
 
 	// IHEX_AppendHex(&root, "test.hex");
-	debug();
+	// debug();
 
 	QUEUE_Destroy(&tasks_root);
 	return 0;
