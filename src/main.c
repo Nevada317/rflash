@@ -198,12 +198,39 @@ static bool transfer_segment_to_page(rfp_buffer_t* page, datasegment_t* segment)
 	if (segment->Offset >= (page->Address + PageSize)) return false;
 	if ((segment->Offset + segment->Length) <= page->Address) return false;
 
-	// TODO: Copy data
+	uint32_t CopyRange_A = segment->Offset;
+	uint32_t CopyRange_B = segment->Offset + segment->Length;
+
+	if (CopyRange_A < page->Address) {
+		CopyRange_A = page->Address;
+	}
+	if (CopyRange_B > (page->Address + PageSize)) {
+		CopyRange_B = (page->Address + PageSize);
+	}
+	uint32_t Count = CopyRange_B - CopyRange_A;
+	if (!Count) return false;
+	memcpy(page->Payload+CopyRange_A-page->Address, segment->Payload+CopyRange_A-segment->Offset, Count);
 	return true;
 }
 
-static void DemoPrintPage(rfp_buffer_t* buffer) {
-	printf("RFP Segment: from %08x to %08x\n", buffer->Address, buffer->Address + buffer->PayloadSize);
+void DemoPrintPage(rfp_buffer_t* buffer) {
+	uint16_t left = buffer->PayloadSize;
+	if (!left) left = 256;
+	printf(" Offset %08x, Length %d\n", buffer->Address, left);
+	uint8_t slen = 0;
+	uint32_t ii = 0;
+	while (left) {
+		if (!slen) {
+			printf("%08x  ", buffer->Address + ii);
+		}
+		printf(" %02X", buffer->Payload[ii++]);
+		if (slen++ == 15) {
+			slen = 0;
+			printf("\n");
+		}
+		left--;
+	}
+
 }
 
 static void add_task_to_rfp_queue(mem_task_t* task) {
@@ -226,7 +253,7 @@ static void add_task_to_rfp_queue(mem_task_t* task) {
 	}
 
 	if (task->isFuse) {
-		printf("Operation: fuse!\n");
+		// printf("Operation: fuse!\n");
 		rfp_list_item = RFP_LIST_NewRecord(&rfp_queue);
 		rfp_buf = &rfp_list_item->Buffer;
 		rfp_buf->Protocol = RFP_PROTOCOL_AVR;
@@ -247,7 +274,7 @@ static void add_task_to_rfp_queue(mem_task_t* task) {
 			return;
 		}
 	} else if (task->isArray) {
-		printf("Operation: array!\n");
+		// printf("Operation: array!\n");
 		uint32_t PageSize;
 		uint32_t MemoryMaxAddr;
 		uint32_t MemoryOffset;
@@ -320,7 +347,7 @@ static void add_task_to_rfp_queue(mem_task_t* task) {
 
 			rfp_buf->Address += MemoryOffset;
 
-			DemoPrintPage(rfp_buf);
+			// DemoPrintPage(rfp_buf);
 
 			CurrentOffset += PageSize;
 
@@ -340,7 +367,7 @@ static void add_task_to_rfp_queue(mem_task_t* task) {
 
 
 	} else if (task->memory_operation == MEM_OPER_ERASE) {
-		printf("Operation: chip erase!\n");
+		// printf("Operation: chip erase!\n");
 		rfp_list_item = RFP_LIST_NewRecord(&rfp_queue);
 		rfp_buf = &rfp_list_item->Buffer;
 		rfp_buf->Protocol = RFP_PROTOCOL_AVR;
@@ -353,7 +380,6 @@ static void add_task_to_rfp_queue(mem_task_t* task) {
 
 static void fill_rfp_queue(mem_task_t* tasks_queue) {
 	if (Failed) return;;
-	printf("fill_rfp_queue called\n");
 	rfp_list_t* rfp_list_item = 0;
 	rfp_buffer_t* rfp_buf = 0;
 
@@ -373,7 +399,6 @@ static void fill_rfp_queue(mem_task_t* tasks_queue) {
 	mem_task_t* task = tasks_queue;
 	while (task) {
 		if (Failed) break;
-		printf("fill_rfp_queue handling task %p\n", task);
 		add_task_to_rfp_queue(task);
 		task = task -> next;
 	}
