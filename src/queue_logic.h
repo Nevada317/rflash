@@ -29,6 +29,9 @@ struct mem_task_t {
 	mem_task_t* next;
 
 	mem_type_t memory_type;
+	// Redundant bool flags
+	bool isFuse;
+	bool isArray;
 	mem_oper_t memory_operation;
 	uint8_t arg_byte;
 	char* arg_string;

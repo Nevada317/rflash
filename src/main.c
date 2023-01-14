@@ -55,16 +55,22 @@ static void arg_U(char key, char* arg) {
 
 	if (!strcmp(arg_memory, "lfuse")) {
 		proto.memory_type = MEM_LFUSE;
+		proto.isFuse = true;
 	} else if (!strcmp(arg_memory, "hfuse")) {
 		proto.memory_type = MEM_HFUSE;
+		proto.isFuse = true;
 	} else if (!strcmp(arg_memory, "efuse")) {
 		proto.memory_type = MEM_EFUSE;
+		proto.isFuse = true;
 	} else if (!strcmp(arg_memory, "lock")) {
 		proto.memory_type = MEM_LOCK;
+		proto.isFuse = true;
 	} else if (!strcmp(arg_memory, "flash")) {
 		proto.memory_type = MEM_FLASH;
+		proto.isArray = true;
 	} else if (!strcmp(arg_memory, "eeprom")) {
 		proto.memory_type = MEM_EEPROM;
+		proto.isArray = true;
 	} else {
 		printf("Error parsing argument: -%c %s\nUnknown memory type: %s\n", key, arg, arg_memory);
 		return;
@@ -82,6 +88,10 @@ static void arg_U(char key, char* arg) {
 	}
 
 	proto.arg_string = strdup(arg_value);
+
+	if (proto.isFuse && (proto.memory_operation == MEM_OPER_WRITE)) {
+		proto.arg_byte = strtol(proto.arg_string, NULL, 0);
+	}
 
 	mem_task_t* newrecord = QUEUE_NewRecord(&tasks_root);
 	memcpy(newrecord, &proto, sizeof(proto));
