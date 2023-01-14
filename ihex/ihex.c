@@ -82,7 +82,7 @@ static bool _try_to_add_seg(datasegment_t** ptr_root, char* line, ihex_context_t
 		chptr += 2;
 	}
 	if (check) {
-		printf("SKIP: Checksum does not match:\n%s\n", line);
+		printf("SKIP: Checksum does not match (differ by %02x):\n%s\n", check, line);
 		return false;
 	}
 
