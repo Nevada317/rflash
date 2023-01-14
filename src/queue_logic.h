@@ -27,6 +27,8 @@ typedef enum mem_oper_t {
 typedef struct mem_task_t mem_task_t;
 struct mem_task_t {
 	mem_task_t* next;
+	// Handle this flag as execution skip - data block is already joined
+	bool continuation;
 
 	mem_type_t memory_type;
 	// Redundant bool flags
