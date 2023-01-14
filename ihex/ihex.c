@@ -137,6 +137,7 @@ static bool _try_to_add_seg(datasegment_t** ptr_root, char* line, ihex_context_t
 		*(wptr++) = _read_hexBE(rptr, 1);
 		rptr += 2* 1;
 	}
+	ctx->non_empty = true;
 
 	return true;
 }
@@ -168,5 +169,5 @@ bool IHEX_AppendHex(datasegment_t** ptr_root, char* filename) {
 		// Parse line
 		_try_to_add_seg(ptr_root, str, &ctx);
 	}
-	return ctx.non_empty;
+	return ctx.non_empty || ctx.terminated;
 }
