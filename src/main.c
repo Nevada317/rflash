@@ -137,16 +137,23 @@ static void arg_1(char key, char* arg) {
 
 static void check_queue(mem_task_t* queue) {
 	mem_task_t* task = queue;
+	mem_task_t* prev = 0;
 	while (task) {
 		if (task->continuation) {
 			task->root_ptr = 0;
+			if (prev) {
+				prev->next = task->next;
+				free(task);
+				task = prev->next;
+				continue;
+			}
 		}
 		if (task->root_ptr) {
 			DATASEG_Fuse(*(task->root_ptr));
 		}
 
 
-
+		prev = task;
 		task = task -> next;
 	}
 }
