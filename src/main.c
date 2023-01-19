@@ -461,18 +461,22 @@ arg_key_t Keys[] = {
 int main(int argc, char *argv[]) {
 	(void)argc;
 
-	ARGS_ParseArgsByList(argv, &AppName, Keys);
-	if (!Failed && !AVR_Device) {
-		printf("ERROR: No target specified. Use key -p\n");
-		Failed = true;
-	}
-	if (!Failed) check_queue(tasks_root);
-	if (!Failed) fill_rfp_queue(tasks_root);
+	Failed = false;
+	do { // Breakable block
+		ARGS_ParseArgsByList(argv, &AppName, Keys);
 
-	// IHEX_AppendHex(&root, "test.hex");
-	// debug();
+		if (Failed) break;
+		if (!AVR_Device) {
+			printf("ERROR: No target specified. Use key -p\n");
+			Failed = true;
+		}
+		if (Failed) break;
+		check_queue(tasks_root);
 
-	// if (!Failed)
+		if (Failed) break;
+		fill_rfp_queue(tasks_root);
+
+	} while (0);
 
 	if (Failed) {
 		printf("\n\nRefusing to continue because of errors\n\n");
