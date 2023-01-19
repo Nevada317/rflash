@@ -22,6 +22,14 @@ const avr_device_t* AVR_Device = 0;
 static bool Failed = false;
 
 static bool SkipSignatureCheck = false;
+static bool SkipErase = false;
+
+static struct Connection_Params {
+	uint32_t Baud;
+	char* PortString;
+} Connection = {
+	.Baud = 115200,
+};
 
 /*
 static void debug() {
@@ -60,6 +68,27 @@ static void arg_e(char key, char* arg) {
 	(void)arg;
 	mem_task_t* newrecord = QUEUE_NewRecord(&tasks_root);
 	newrecord->memory_operation = MEM_OPER_ERASE;
+	SkipErase = true;
+}
+
+static void arg_D(char key, char* arg) {
+	if (key != 'D') return;
+	if (Failed) return;
+	(void)arg;
+	SkipErase = true;
+}
+
+static void arg_F(char key, char* arg) {
+	if (key != 'F') return;
+	if (Failed) return;
+	(void)arg;
+	SkipSignatureCheck = true;
+}
+
+static void arg_P(char key, char* arg) {
+	if (key != 'P') return;
+	if (Failed) return;
+	Connection.PortString = strdup(arg);
 }
 
 static void arg_p(char key, char* arg) {
@@ -421,8 +450,11 @@ arg_key_t Keys[] = {
 	{.key = 'c', .needs_arg = true,  .handler = arg_DUMMY}, // Ignore
 	{.key = 'B', .needs_arg = true,  .handler = arg_DUMMY}, // Ignore
 	{.key = 'p', .needs_arg = true,  .handler = arg_p}, // Part
+	{.key = 'P', .needs_arg = true,  .handler = arg_P}, // Port
 	{.key = 'U', .needs_arg = true,  .handler = arg_U}, // Command
 	{.key = 'e', .needs_arg = false, .handler = arg_e}, // Chip erase
+	{.key = 'D', .needs_arg = false, .handler = arg_D}, // Disable chip erase
+	{.key = 'F', .needs_arg = false, .handler = arg_F}, // Disable signature check
 	{0}
 };
 
