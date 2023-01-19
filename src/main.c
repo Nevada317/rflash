@@ -262,7 +262,7 @@ void DemoPrintPage(rfp_buffer_t* buffer) {
 
 }
 
-static void add_task_to_rfp_queue(mem_task_t* task) {
+static void add_task_to_rfp_queue(mem_task_t* task, rfp_list_t** rfp_qptr) {
 	rfp_list_t* rfp_list_item = 0;
 	rfp_buffer_t* rfp_buf = 0;
 	rfp_operation_t oper = 0;
@@ -283,7 +283,7 @@ static void add_task_to_rfp_queue(mem_task_t* task) {
 
 	if (task->isFuse) {
 		// printf("Operation: fuse!\n");
-		rfp_list_item = RFP_LIST_NewRecord(&rfp_queue);
+		rfp_list_item = RFP_LIST_NewRecord(rfp_qptr);
 		rfp_buf = &rfp_list_item->Buffer;
 		rfp_buf->Protocol = RFP_PROTOCOL_AVR;
 		rfp_buf->Operation = oper;
@@ -358,7 +358,7 @@ static void add_task_to_rfp_queue(mem_task_t* task) {
 				createnewstart = false;
 			}
 
-			rfp_list_item = RFP_LIST_NewRecord(&rfp_queue);
+			rfp_list_item = RFP_LIST_NewRecord(rfp_qptr);
 			rfp_buf = &rfp_list_item->Buffer;
 			rfp_buf->Protocol = RFP_PROTOCOL_AVR;
 			rfp_buf->Operation = oper;
@@ -389,15 +389,9 @@ static void add_task_to_rfp_queue(mem_task_t* task) {
 			}
 		}
 
-
-		// NotFullPage = ((segment_cur->Offset & ~PageMask) != 0); // Left align mismatch
-
-
-
-
 	} else if (task->memory_operation == MEM_OPER_ERASE) {
 		// printf("Operation: chip erase!\n");
-		rfp_list_item = RFP_LIST_NewRecord(&rfp_queue);
+		rfp_list_item = RFP_LIST_NewRecord(rfp_qptr);
 		rfp_buf = &rfp_list_item->Buffer;
 		rfp_buf->Protocol = RFP_PROTOCOL_AVR;
 		rfp_buf->Operation = RFP_OPER_Erase;
@@ -407,13 +401,13 @@ static void add_task_to_rfp_queue(mem_task_t* task) {
 	}
 }
 
-static void fill_rfp_queue(mem_task_t* tasks_queue) {
-	if (Failed) return;;
+static void fill_rfp_queue(mem_task_t* tasks_queue, rfp_list_t** rfp_qptr) {
+	if (Failed) return;
 	rfp_list_t* rfp_list_item = 0;
 	rfp_buffer_t* rfp_buf = 0;
 
 	if (!SkipSignatureCheck && AVR_Device->signature.Length) {
-		rfp_list_item = RFP_LIST_NewRecord(&rfp_queue);
+		rfp_list_item = RFP_LIST_NewRecord(rfp_qptr);
 		if (!rfp_list_item) {
 			Failed = true;
 			return;
@@ -428,16 +422,17 @@ static void fill_rfp_queue(mem_task_t* tasks_queue) {
 	mem_task_t* task = tasks_queue;
 	while (task) {
 		if (Failed) break;
-		add_task_to_rfp_queue(task);
+		add_task_to_rfp_queue(task, rfp_qptr);
 		task = task -> next;
 	}
 
 	// Release bus
-	rfp_list_item = RFP_LIST_NewRecord(&rfp_queue);
+	rfp_list_item = RFP_LIST_NewRecord(rfp_qptr);
 	rfp_buf = &rfp_list_item->Buffer;
 	rfp_buf->Protocol = RFP_PROTOCOL_AVR;
 	rfp_buf->Operation = RFP_OPER_Release;
 }
+
 
 static void arg_DUMMY(char key, char* arg) {
 	if (Failed) return;
@@ -474,7 +469,7 @@ int main(int argc, char *argv[]) {
 		check_queue(tasks_root);
 
 		if (Failed) break;
-		fill_rfp_queue(tasks_root);
+		fill_rfp_queue(tasks_root, &rfp_queue);
 
 	} while (0);
 
