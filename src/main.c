@@ -462,6 +462,10 @@ int main(int argc, char *argv[]) {
 	(void)argc;
 
 	ARGS_ParseArgsByList(argv, &AppName, Keys);
+	if (!Failed && !AVR_Device) {
+		printf("ERROR: No target specified. Use key -p\n");
+		Failed = true;
+	}
 	if (!Failed) check_queue(tasks_root);
 	if (!Failed) fill_rfp_queue(tasks_root);
 
