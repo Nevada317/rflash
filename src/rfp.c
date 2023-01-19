@@ -22,3 +22,7 @@ rfp_list_t* RFP_LIST_NewRecord(rfp_list_t** root_ptr) {
 	(*root_ptr)->count = newrecord->index + 1;
 	return newrecord;
 }
+
+void RFP_AppendCRC(rfp_buffer_t* Buffer) {
+	(void)Buffer;
+}

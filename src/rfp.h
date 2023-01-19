@@ -122,5 +122,6 @@ struct rfp_list_t {
 };
 
 rfp_list_t* RFP_LIST_NewRecord(rfp_list_t** root_ptr);
+void RFP_AppendCRC(rfp_buffer_t* Buffer);
 
 #endif /* _RFP_COMMON_H */

@@ -403,6 +403,7 @@ static void add_task_to_rfp_queue(mem_task_t* task, rfp_list_t** rfp_qptr) {
 
 static void fill_rfp_queue(mem_task_t* tasks_queue, rfp_list_t** rfp_qptr) {
 	if (Failed) return;
+	if (!AVR_Device) return;
 	rfp_list_t* rfp_list_item = 0;
 	rfp_buffer_t* rfp_buf = 0;
 
@@ -433,6 +434,15 @@ static void fill_rfp_queue(mem_task_t* tasks_queue, rfp_list_t** rfp_qptr) {
 	rfp_buf->Operation = RFP_OPER_Release;
 }
 
+static void sign_rfp_queue(rfp_list_t** rfp_qptr) {
+	if (!rfp_qptr) return;
+	if (!*rfp_qptr) return;
+	rfp_list_t* rfp_item = *rfp_qptr;
+	while (rfp_item) {
+		RFP_AppendCRC(&rfp_item->Buffer);
+		rfp_item = rfp_item->next;
+	}
+}
 
 static void arg_DUMMY(char key, char* arg) {
 	if (Failed) return;
@@ -470,6 +480,9 @@ int main(int argc, char *argv[]) {
 
 		if (Failed) break;
 		fill_rfp_queue(tasks_root, &rfp_queue);
+
+		if (Failed) break;
+		sign_rfp_queue(&rfp_queue);
 
 	} while (0);
 
