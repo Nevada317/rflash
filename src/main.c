@@ -245,7 +245,7 @@ static bool transfer_segment_to_page(rfp_buffer_t* page, datasegment_t* segment)
 void DemoPrintPage(rfp_buffer_t* buffer) {
 	uint16_t left = buffer->PayloadSize;
 	if (!left) left = 256;
-	printf(" Offset %08x, Length %d\n", buffer->Address, left);
+	printf(" Offset %08x, Length %d, Operation %02x, Protocol %02x\n", buffer->Address, left, buffer->Operation, buffer->Protocol);
 	uint8_t slen = 0;
 	uint32_t ii = 0;
 	while (left) {
@@ -289,7 +289,6 @@ static void add_task_to_rfp_queue(mem_task_t* task, rfp_list_t** rfp_qptr) {
 		// printf("Operation: fuse!\n");
 		rfp_list_item = RFP_LIST_NewRecord(rfp_qptr);
 		rfp_buf = &rfp_list_item->Buffer;
-		rfp_buf->Protocol = RFP_PROTOCOL_AVR;
 		rfp_buf->Operation = oper;
 		rfp_buf->PayloadSize = 1;
 		rfp_buf->Payload[0] = task->arg_byte;
@@ -364,7 +363,6 @@ static void add_task_to_rfp_queue(mem_task_t* task, rfp_list_t** rfp_qptr) {
 
 			rfp_list_item = RFP_LIST_NewRecord(rfp_qptr);
 			rfp_buf = &rfp_list_item->Buffer;
-			rfp_buf->Protocol = RFP_PROTOCOL_AVR;
 			rfp_buf->Operation = oper;
 			rfp_buf->PayloadSize = PageSize & 0xFF;
 			rfp_buf->Address = CurrentOffset;
@@ -395,7 +393,6 @@ static void add_task_to_rfp_queue(mem_task_t* task, rfp_list_t** rfp_qptr) {
 		// printf("Operation: chip erase!\n");
 		rfp_list_item = RFP_LIST_NewRecord(rfp_qptr);
 		rfp_buf = &rfp_list_item->Buffer;
-		rfp_buf->Protocol = RFP_PROTOCOL_AVR;
 		rfp_buf->Operation = RFP_OPER_Erase;
 	} else {
 		printf("Unknown operation in task queue!\n");
@@ -416,7 +413,6 @@ static void fill_rfp_queue(mem_task_t* tasks_queue, rfp_list_t** rfp_qptr) {
 			return;
 		}
 		rfp_buf = &rfp_list_item->Buffer;
-		rfp_buf->Protocol = RFP_PROTOCOL_AVR;
 		rfp_buf->PayloadSize = AVR_Device->signature.Length;
 		memcpy(rfp_buf->Payload, AVR_Device->signature.Value, rfp_buf->PayloadSize);
 		rfp_buf->Operation = RFP_OPER_SigCheck;
@@ -432,7 +428,6 @@ static void fill_rfp_queue(mem_task_t* tasks_queue, rfp_list_t** rfp_qptr) {
 	// Release bus
 	rfp_list_item = RFP_LIST_NewRecord(rfp_qptr);
 	rfp_buf = &rfp_list_item->Buffer;
-	rfp_buf->Protocol = RFP_PROTOCOL_AVR;
 	rfp_buf->Operation = RFP_OPER_Release;
 }
 
@@ -441,6 +436,7 @@ static void sign_rfp_queue(rfp_list_t** rfp_qptr) {
 	if (!*rfp_qptr) return;
 	rfp_list_t* rfp_item = *rfp_qptr;
 	while (rfp_item) {
+		rfp_item->Buffer.Protocol = RFP_PROTOCOL_AVR;
 		RFP_AppendCRC(&rfp_item->Buffer);
 		DemoPrintPage(&rfp_item->Buffer);
 		rfp_item = rfp_item->next;
