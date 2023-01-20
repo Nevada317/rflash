@@ -259,6 +259,10 @@ void DemoPrintPage(rfp_buffer_t* buffer) {
 		}
 		left--;
 	}
+	if (slen) {
+		printf("\n");
+	}
+
 
 }
 
@@ -376,8 +380,6 @@ static void add_task_to_rfp_queue(mem_task_t* task, rfp_list_t** rfp_qptr) {
 
 			rfp_buf->Address += MemoryOffset;
 
-			// DemoPrintPage(rfp_buf);
-
 			CurrentOffset += PageSize;
 
 			if (CurrentOffset >= (segment_cur->Offset + segment_cur->Length)) {
@@ -440,6 +442,7 @@ static void sign_rfp_queue(rfp_list_t** rfp_qptr) {
 	rfp_list_t* rfp_item = *rfp_qptr;
 	while (rfp_item) {
 		RFP_AppendCRC(&rfp_item->Buffer);
+		DemoPrintPage(&rfp_item->Buffer);
 		rfp_item = rfp_item->next;
 	}
 }
