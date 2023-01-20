@@ -15,6 +15,7 @@ typedef struct avr_specs_t {
 	bool has_hfuse;
 	bool has_efuse;
 	bool has_lock;
+	bool has_extended_address;
 	uint32_t EEPROM_Size;
 	uint32_t EEPROM_PageSize;
 	uint32_t FLASH_Size;

@@ -95,11 +95,29 @@ typedef enum __attribute__((__packed__)) {
 	RFP_PROTOCOL_BitBang = 0x04U,
 } rfp_protocol_t;
 
+/*
+typedef enum __attribute__((__packed__)) {
+	// ### Flags_Common field enum ###
+	// This enum will be stored as uint8_t.
+	RFP_FLAGS_COMMON_Unused0    = 0x01U,
+	RFP_FLAGS_COMMON_Unused1    = 0x02U,
+	RFP_FLAGS_COMMON_Unused2    = 0x04U,
+	RFP_FLAGS_COMMON_Unused3    = 0x08U,
+	RFP_FLAGS_COMMON_Unused4    = 0x10U,
+	RFP_FLAGS_COMMON_Unused5    = 0x20U,
+	RFP_FLAGS_COMMON_Unused6    = 0x40U,
+	RFP_FLAGS_COMMON_Unused7    = 0x80U,
+} rfp_flags_com_t;
+*/
+
+#define Flag_AVR_ExtendedAddress 0x01
+
 // Safety assertions for protocol uniformity
 static_assert(sizeof(rfp_task_status_t) == 1, "Short enums expected");
 static_assert(sizeof(rfp_command_t)     == 1, "Short enums expected");
 static_assert(sizeof(rfp_operation_t)   == 1, "Short enums expected");
 static_assert(sizeof(rfp_protocol_t)    == 1, "Short enums expected");
+// static_assert(sizeof(rfp_flags_com_t)   == 1, "Short enums expected");
 
 typedef struct  __attribute__((packed)) rfp_buffer_t {
 	uint8_t Payload[256];
@@ -107,6 +125,8 @@ typedef struct  __attribute__((packed)) rfp_buffer_t {
 	uint32_t Address;
 	rfp_operation_t Operation;
 	rfp_protocol_t Protocol;
+	// rfp_flags_com_t Flags_Common;
+	uint8_t Flags;
 
 	uint16_t CRC;
 } rfp_buffer_t;

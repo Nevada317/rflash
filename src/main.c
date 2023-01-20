@@ -437,6 +437,9 @@ static void sign_rfp_queue(rfp_list_t** rfp_qptr) {
 	rfp_list_t* rfp_item = *rfp_qptr;
 	while (rfp_item) {
 		rfp_item->Buffer.Protocol = RFP_PROTOCOL_AVR;
+		if (AVR_Device->specs.has_extended_address) {
+			rfp_item->Buffer.Flags |= Flag_AVR_ExtendedAddress;
+		}
 		RFP_AppendCRC(&rfp_item->Buffer);
 		DemoPrintPage(&rfp_item->Buffer);
 		rfp_item = rfp_item->next;
