@@ -57,7 +57,7 @@ void* async_reader(void* arg) {
 	response_fd = fd;
 	while (1) {
 		int length = read(fd, buff, sizeof(buff));
-		if (length) {
+		if (length > 0) {
 			PrintBuffer("Rx", buff, length);
 			if (rx_cb) rx_cb(buff, length);
 		}
@@ -65,8 +65,8 @@ void* async_reader(void* arg) {
 			printf("Server Exit...\n");
 			break;
 		}
-		if (!length) {
-			printf("Server Exit due to empty read...\n");
+		if (length <= 0) {
+			printf("Server Exit due to empty read (length = %d)...\n", length);
 			break;
 		}
 	}

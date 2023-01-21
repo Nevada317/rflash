@@ -4,6 +4,8 @@
 #include "rfp.h"
 #include "queue_logic.h"
 #include "avr/devices.h"
+#include "tcp_client.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -61,6 +63,12 @@ static void debug() {
 	free(arr);
 }
 */
+
+void my_cb(void* data, int length) {
+	printf("Rx cb: %d @ %p\n", length, data);
+	// server_send("test\n", 5);
+}
+
 
 static void arg_e(char key, char* arg) {
 	if (key != 'e') return;
@@ -446,6 +454,18 @@ static void sign_rfp_queue(rfp_list_t** rfp_qptr) {
 	}
 }
 
+static void send_rfp_queue(rfp_list_t** rfp_qptr) {
+	// This is stub only. That is not supposed to work with rel RFP
+
+	if (!rfp_qptr) return;
+	if (!*rfp_qptr) return;
+	rfp_list_t* rfp_item = *rfp_qptr;
+	while (rfp_item) {
+		server_send(&rfp_item->Buffer, sizeof(rfp_item->Buffer));
+		rfp_item = rfp_item->next;
+	}
+}
+
 static void arg_DUMMY(char key, char* arg) {
 	if (Failed) return;
 	if (!key) key = '?';
@@ -486,6 +506,11 @@ int main(int argc, char *argv[]) {
 		if (Failed) break;
 		sign_rfp_queue(&rfp_queue);
 
+		if (Failed) break;
+		Failed |= !connect_tcp_qualified("127.0.0.1", 8080, my_cb);
+
+		if (Failed) break;
+		send_rfp_queue(&rfp_queue);
 	} while (0);
 
 	if (Failed) {
@@ -495,6 +520,8 @@ int main(int argc, char *argv[]) {
 	QUEUE_Destroy(&tasks_root);
 	DATASEG_Destroy(&global_root_EEPROM);
 	DATASEG_Destroy(&global_root_FLASH);
+
+	disconnect_tcp();
 
 	return Failed ? 1 : 0;
 }

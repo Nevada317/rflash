@@ -18,6 +18,8 @@ EXTRADEPS=Makefile
 CFLAGS  += -Wall
 CFLAGS  += -Wextra
 
+CFLAGS  += -pthread
+
 # Add all search paths for headers on order of prefrence
 CFLAGS += -Isrc/
 CFLAGS += -Isrc/ihex/
