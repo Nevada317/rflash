@@ -11,7 +11,7 @@ HEADS=$(shell find src -name "*.h")
 SRCS=$(shell find src -name "*.c")
 OBJS=$(patsubst src/%.c,${BUILD_DIR}/%.o,${SRCS})
 
-CLEAR_TARGETS=${OBJS} ${BINARY} ${BINARY}_*
+CLEAR_TARGETS=${BUILD_DIR} build/
 EXTRADEPS=Makefile
 
 # Set warnings varbosity
@@ -103,7 +103,7 @@ ${BUILD_DIR}/%.o: src/%.c ${HEADS} ${EXTRADEPS}
 	@echo -e "Done\n"
 
 clean:
-	rm -f ${CLEAR_TARGETS}
+	rm -rf ${CLEAR_TARGETS}
 
 # UNKNOWN TARGET HANDLER
 unknown_target:
