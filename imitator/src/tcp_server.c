@@ -19,12 +19,44 @@ static volatile bool StopThreads = false;
 
 pthread_t thread_reader = 0;
 
+void PrintBuffer(char* tag, void* data, int size) {
+	int left = size;
+	unsigned char* ptr = data;
+	if (left <= 0) {
+		printf(" Tried to print packet with length %d and tag *%s*!\n", left, tag);
+		return;
+	}
+	if (tag) {
+		printf(" (%s) Packet with length %d:\n", tag, left);
+	} else {
+		printf(" Packet with length %d:\n", left);
+	}
+	uint8_t slen = 0;
+	uint32_t ii = 0;
+	while (left) {
+		if (!slen) {
+			printf("%08x:  ", ii);
+		}
+		printf(" %02X", ptr[ii++]);
+		if (slen++ == 15) {
+			slen = 0;
+			printf("\n");
+		}
+		left--;
+	}
+	if (slen) {
+		printf("\n");
+	}
+
+}
+
 void* async_reader(void* arg) {
 	char buff[MAX];
 	int fd = *((int*)arg);
 	while (1) {
 		int length = read(fd, buff, sizeof(buff));
 		if (length) {
+			PrintBuffer("Rx", buff, length);
 			printf("From client (%d bytes): %s\n", length, buff);
 		}
 		if (strncmp("exit", buff, 4) == 0) {
