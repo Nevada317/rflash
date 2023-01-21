@@ -9,15 +9,14 @@
 #include <sys/types.h>
 #include <unistd.h> // read(), write(), close()
 #define MAX 2048
-#define PORT 8080
 
 #include <pthread.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-static volatile bool StopThreads = false;
-
 pthread_t thread_reader = 0;
+
+void (*rx_cb)(void* data, int length);
 
 void PrintBuffer(char* tag, void* data, int size) {
 	int left = size;
@@ -57,7 +56,7 @@ void* async_reader(void* arg) {
 		int length = read(fd, buff, sizeof(buff));
 		if (length) {
 			PrintBuffer("Rx", buff, length);
-			printf("From client (%d bytes): %s\n", length, buff);
+			if (rx_cb) rx_cb(buff, length);
 		}
 		if (strncmp("exit", buff, 4) == 0) {
 			printf("Server Exit...\n");
@@ -74,11 +73,12 @@ void* async_reader(void* arg) {
 }
 
 // Driver function
-int server_start()
-{
+int server_start(int port, void (*cb)(void* data, int length)) {
 	int sockfd, connfd;
 	unsigned int len;
 	struct sockaddr_in servaddr, cli;
+
+	rx_cb = cb;
 
 	// socket create and verification
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -94,7 +94,7 @@ int server_start()
 	// assign IP, PORT
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port = htons(PORT);
+	servaddr.sin_port = htons(port);
 
 	int true_int = 1;
 	setsockopt(sockfd, AF_INET, SO_REUSEADDR, &true_int, sizeof(true_int));
