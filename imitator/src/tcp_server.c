@@ -11,32 +11,30 @@
 #define MAX 2048
 #define PORT 8080
 
-// Function designed for chat between client and server.
-void func(int connfd)
-{
+#include <pthread.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+static volatile bool StopThreads = false;
+
+pthread_t thread_reader = 0;
+
+void* async_reader(void* arg) {
 	char buff[MAX];
-	// infinite loop for chat
-	for (;;) {
-		bzero(buff, MAX);
-
-		// read the message from client and copy it in buffer
-		int length = read(connfd, buff, sizeof(buff));
-		// print buffer which contains the client contents
-		printf("From client (%d bytes): %s\n", length, buff);
-		// copy server message in the buffer
-		// while ((buff[n++] = getchar()) != '\n')
-			// ;
-
-		// and send that buffer to client
-		// write(connfd, buff, sizeof(buff));
-
-		// if msg contains "Exit" then server exit and chat ended.
+	int fd = *((int*)arg);
+	while (1) {
+		int length = read(fd, buff, sizeof(buff));
+		if (length) {
+			printf("From client (%d bytes): %s\n", length, buff);
+		}
 		if (strncmp("exit", buff, 4) == 0) {
 			printf("Server Exit...\n");
 			break;
 		}
 	}
-	close(connfd);
+	printf("Closing...\n");
+	close(fd);
+	return 0;
 }
 
 // Driver function
@@ -61,6 +59,9 @@ int server_start()
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	servaddr.sin_port = htons(PORT);
+
+	int true_int = 1;
+	setsockopt(sockfd, AF_INET, SO_REUSEADDR, &true_int, sizeof(true_int));
 
 	// Binding newly created socket to given IP and verification
 	if ((bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr))) != 0) {
@@ -91,10 +92,18 @@ int server_start()
 		else {
 			printf("server accept the client...\n");
 			// Function for chatting between client and server
-			func(connfd);
+
+			if (thread_reader) {
+				pthread_cancel(thread_reader);
+				pthread_join(thread_reader, NULL);
+				thread_reader = 0;
+			}
+			pthread_create(&thread_reader, 0, async_reader, &connfd);
 		}
-		break;
 	}
+
+	pthread_cancel(thread_reader);
+	pthread_join(thread_reader, NULL);
 
 	// After chatting close the socket
 	close(sockfd);
