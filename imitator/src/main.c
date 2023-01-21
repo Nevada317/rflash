@@ -3,6 +3,7 @@
 
 void my_cb(void* data, int length) {
 	printf("Rx cb: %d @ %p\n", length, data);
+	server_send("test\n", 5);
 }
 
 int main(int argc, char *argv[]) {

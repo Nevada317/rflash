@@ -18,6 +18,8 @@ pthread_t thread_reader = 0;
 
 void (*rx_cb)(void* data, int length);
 
+volatile int response_fd = 0;
+
 void PrintBuffer(char* tag, void* data, int size) {
 	int left = size;
 	unsigned char* ptr = data;
@@ -52,6 +54,7 @@ void PrintBuffer(char* tag, void* data, int size) {
 void* async_reader(void* arg) {
 	char buff[MAX];
 	int fd = *((int*)arg);
+	response_fd = fd;
 	while (1) {
 		int length = read(fd, buff, sizeof(buff));
 		if (length) {
@@ -68,6 +71,7 @@ void* async_reader(void* arg) {
 		}
 	}
 	printf("Closing...\n");
+	response_fd = 0;
 	close(fd);
 	return 0;
 }
@@ -144,4 +148,11 @@ int server_start(int port, void (*cb)(void* data, int length)) {
 	// After chatting close the socket
 	close(sockfd);
 	return 0;
+}
+
+void server_send(void* data, int length) {
+	PrintBuffer("Tx", data, length);
+	if (response_fd) {
+		write(response_fd, data, length);
+	}
 }
