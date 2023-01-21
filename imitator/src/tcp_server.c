@@ -31,6 +31,10 @@ void* async_reader(void* arg) {
 			printf("Server Exit...\n");
 			break;
 		}
+		if (!length) {
+			printf("Server Exit due to empty read...\n");
+			break;
+		}
 	}
 	printf("Closing...\n");
 	close(fd);
