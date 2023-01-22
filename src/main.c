@@ -509,8 +509,13 @@ int main(int argc, char *argv[]) {
 		if (Failed) break;
 		Failed |= !connect_tcp_qualified("127.0.0.1", 8080, my_cb);
 
-		if (Failed) break;
-		send_rfp_queue(&rfp_queue);
+		// if (Failed) break;
+		// send_rfp_queue(&rfp_queue);
+
+		rfp_flexbuffer_t * temp = RFP_CreateParcel(RFP_CMD_Add0, 0x55, &rfp_queue->Buffer);
+		if (temp) {
+			server_send(&temp->Data, temp->Length);
+		}
 	} while (0);
 
 	if (Failed) {

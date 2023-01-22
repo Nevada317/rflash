@@ -224,13 +224,13 @@ struct rfp_list_t {
 
 typedef struct __attribute__((packed)) rfp_flexbuffer_t {
 	uint16_t Length;
-	char Data[];
+	uint8_t Data[];
 } rfp_flexbuffer_t;
 
 rfp_list_t* RFP_LIST_NewRecord(rfp_list_t** root_ptr);
 void RFP_AppendCRC(rfp_buffer_t* Buffer);
 
 // Returns block, allocated by malloc. Should be free'd
-rfp_flexbuffer_t * RFP_CreateParcel(rfp_command_t command, uint8_t index, rfp_buffer_t buffer);
+rfp_flexbuffer_t * RFP_CreateParcel(rfp_command_t command, uint8_t index, rfp_buffer_t* buffer);
 
 #endif /* _RFP_COMMON_H */

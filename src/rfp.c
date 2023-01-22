@@ -27,11 +27,58 @@ void RFP_AppendCRC(rfp_buffer_t* Buffer) {
 	(void)Buffer;
 }
 
-rfp_flexbuffer_t * RFP_CreateParcel(rfp_command_t command, uint8_t index, rfp_buffer_t buffer) {
-	// TODO: Create parcel with all needed data
-	// TODO: Calculate CRC
-	// TODO: Allocate rfp_flexbuffer_t with enough room
-	// TODO: Perform stuffing
-	// TODO: Shorten rfp_flexbuffer_t by realloc
-	return 0;
+static uint16_t CRC_Dummy(void* buffer, uint8_t len) {
+	(void) buffer;
+	(void) len;
+	return 0x1234;
+}
+
+rfp_flexbuffer_t * RFP_CreateParcel(rfp_command_t command, uint8_t index, rfp_buffer_t* buffer) {
+	uint16_t UnstuffedLength = 1+1+1+128+2; // See "Transport parcel"
+	uint8_t idx = index;
+	uint8_t len = 128;
+	void* src = 0;
+	if (buffer) {
+		src = buffer->Payload;
+	} else {
+		len = 0;
+	}
+	uint8_t InitialBuffer[UnstuffedLength];
+	uint16_t w = 0;
+	InitialBuffer[w++] = (uint8_t) command;
+	InitialBuffer[w++] = (uint8_t) idx;
+	InitialBuffer[w++] = (uint8_t) len;
+	if (len) {
+		memcpy(&InitialBuffer[w], src, len);
+	}
+	w += len;
+	uint16_t CRC = CRC_Dummy(InitialBuffer, w);
+	InitialBuffer[w++] = (CRC & 0xFF);
+	InitialBuffer[w++] = (CRC >> 8);
+	UnstuffedLength = w;
+
+	uint16_t DoubleLength = 1 + 2*UnstuffedLength;
+	rfp_flexbuffer_t * res = calloc(1, sizeof(rfp_flexbuffer_t) + DoubleLength);
+	w = 0;
+
+	res->Data[w++] = RFP_STX;
+	for (uint16_t r = 0; r < UnstuffedLength; r++) {
+		if (InitialBuffer[r] == RFP_STX) {
+			res->Data[w++] = RFP_ESC;
+			res->Data[w++] = RFP_ESTX;
+		} else if (InitialBuffer[r] == RFP_ESC) {
+			res->Data[w++] = RFP_ESC;
+			res->Data[w++] = RFP_EESC;
+		} else {
+			res->Data[w++] = InitialBuffer[r];
+		}
+	}
+	res->Length = w;
+	rfp_flexbuffer_t * newres = realloc(res, sizeof(rfp_flexbuffer_t) + res->Length);
+	if (newres) {
+		return newres;
+	} else {
+		free(res);
+		return 0;
+	}
 }
