@@ -8,6 +8,81 @@
 #define OFFSET_EEP   0x01000000UL
 #define OFFSET_FUSE  0x02000000UL
 
+/* ###  PROTOCOL DEFINITION  ###
+ * Server is a programming hardware (executor)
+ * Client is programming software running in PC.
+ *
+ * Each side has to send similar packets using transport-level protocol
+ *
+ * Transport packets carry up to 128 bytes of payload.
+ * Byte stuffing is necessary.
+ * Special bytes has to be stuffed.
+ * STX and ESC symbols should be replaced by
+ * ESC ESTX and ESC EESC byte pairs.
+ *
+ * NOTE: Bytes, that need to be stuffed appear only in Payload and CRC, as
+ * other fields may not become equal to those special values.
+ *
+ * Transport parcel looks like:
+ * | STX | CMD | IDX | LEN |  PAYLOAD  | CRC |
+ *       |                 \_LEN bytes_/     |
+ *       \__________Byte stuffing____________/
+ * Where:
+ *   STX - Fixed constant
+ *   CMD - Command (see rfp_command_t)
+ *     (FROM PC to executor)
+ *       Reset
+ *       Poll
+ *       Add0
+ *       Add1
+ *       Add2
+ *       Get0
+ *       Get1
+ *       Ack (finishes task)
+ *     (FROM executor to PC)
+ *       Report
+ *       Data0
+ *       Data1
+ *   IDX - Block number
+ *       Should be 255 for reset/poll/report command,
+ *       and in 0-127 range in others cases
+ *   LEN - length of payload (0-128)
+ *   PAYLOAD - [LEN] bytes
+ *   CRC - CRC-16 code for CMD..PAYLOAD
+ *     (TODO: Describe poly and initial state)
+ *
+ * Add0 command allows one to fill Buffer[0..127]
+ * Add1 command allows one to fill Buffer[128..255]
+ * Add2 command allows one to fill task parameters (Address, oper etc)
+ *
+ * Executor should check, that ALL of those commands are executed IN ORDER.
+ * If payload's second part is not needed (due to low page size), one shall call
+ * empty Add1 operation with payload size 0, so Add2 command becomes is available.
+ * Second call to the same function will be ignored by executor.
+ *
+ * Best case scenario:
+ * [FF] Reset >
+ * [01] Add0 >
+ * [01] Add1 >
+ * [01] Add2 >
+ * [FF] Poll >
+ * < Report (task 01 is in state GotAdd1)
+ * [01] Add2 >
+ * [FF] Poll >
+ * < Report (task 01 is in state Filled)
+ * [02] Add0 >
+ * [02] Add1 >
+ * [02] Add2 >
+ * < Report (01 is in execution, 02 is filled)
+ * */
+
+#define RFP_STX 0xFC
+#define RFP_ESC 0xFE
+#define RFP_STUFFING_MASK 0x80
+#define RFP_ESTX (RFP_STX ^ RFP_STUFFING_MASK)
+#define RFP_EESC (RFP_ESC ^ RFP_STUFFING_MASK)
+
+
 
 typedef enum __attribute__((__packed__)) {
 	// ### TASK_STATUS field enum ###
@@ -22,8 +97,9 @@ typedef enum __attribute__((__packed__)) {
 
 	// Buffer ready or filling
 	RFP_Task_None      = 0x00U, // Buffer is empty and can be filled
-	RFP_Task_Claimed   = 0x11U, // Buffer is partially filled
-	RFP_Task_Filled    = 0x12U, // Buffer was filled. Waiting for execution
+	RFP_Task_GotAdd0   = 0x11U, // Buffer is partially filled
+	RFP_Task_GotAdd1   = 0x12U, // Buffer is partially filled
+	RFP_Task_Filled    = 0x13U, // Buffer was filled. Waiting for execution
 
 	// Low-Level operations (stub)
 	RFP_Task_LL_SPI    = 0x21U, // Low-Level operation in progress - SPI
@@ -62,13 +138,19 @@ typedef enum __attribute__((__packed__)) {
 	// ### COMMAND field enum ###
 	// This enum will be stored as uint8_t.
 	// Request (PC to programmer)
-	RFP_Cmd_Poll       = 0x00U,
-	RFP_Cmd_AddData    = 0x01U,
-	RFP_Cmd_Ack        = 0x7FU,
+	RFP_CMD_POLL        = 0x00,
+	RFP_CMD_Add0        = 0x11,
+	RFP_CMD_Add1        = 0x12,
+	RFP_CMD_Add2        = 0x13,
+	RFP_CMD_Get0        = 0x21,
+	RFP_CMD_Get1        = 0x22,
+	RFP_CMD_Ack         = 0x55,
+	RFP_CMD_RESET       = 0xFF,
 
 	// Response (Programmer to PC)
-	RFP_Cmd_Status     = 0x80U,
-	RFP_Cmd_DataReport = 0x81U,
+	RFP_CMD_REPORT      = 0xF0,
+	RFP_CMD_Data0       = 0x81,
+	RFP_CMD_Data1       = 0x82,
 } rfp_command_t;
 
 typedef enum __attribute__((__packed__)) {
@@ -127,7 +209,6 @@ typedef struct  __attribute__((packed)) rfp_buffer_t {
 	rfp_protocol_t Protocol;
 	// rfp_flags_com_t Flags_Common;
 	uint8_t Flags;
-
 	uint16_t CRC;
 } rfp_buffer_t;
 
@@ -141,7 +222,15 @@ struct rfp_list_t {
 	rfp_buffer_t Buffer;
 };
 
+typedef struct __attribute__((packed)) rfp_flexbuffer_t {
+	uint16_t Length;
+	char Data[];
+} rfp_flexbuffer_t;
+
 rfp_list_t* RFP_LIST_NewRecord(rfp_list_t** root_ptr);
 void RFP_AppendCRC(rfp_buffer_t* Buffer);
+
+// Returns block, allocated by malloc. Should be free'd
+rfp_flexbuffer_t * RFP_CreateParcel(rfp_command_t command, uint8_t index, rfp_buffer_t buffer);
 
 #endif /* _RFP_COMMON_H */
