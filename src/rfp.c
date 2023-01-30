@@ -1,5 +1,6 @@
 #include "rfp.h"
 #include <stdlib.h>
+#include <string.h>
 
 
 rfp_list_t* RFP_LIST_NewRecord(rfp_list_t** root_ptr) {

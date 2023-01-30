@@ -2,6 +2,7 @@
 #include "ihex.h"
 #include "args.h"
 #include "rfp.h"
+#include "rfp_queue.h"
 #include "queue_logic.h"
 #include "avr/devices.h"
 #include "tcp_client.h"
