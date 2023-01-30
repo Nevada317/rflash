@@ -70,7 +70,9 @@ static void* RFP_WorkerLoop(void*) {
 			case RFP_Queue_Action_Poll:
 			case RFP_Queue_Action_Release:
 			case RFP_Queue_Action_ReadData:
-			case RFP_Queue_Action_SendData:
+			case RFP_Queue_Action_SendData_Add0:
+			case RFP_Queue_Action_SendData_Add1:
+			case RFP_Queue_Action_SendData_Add2:
 				RFP_Queue_SendRequest(&Executor[PriorityExecutor], PriorityAction);
 				break;
 		}
@@ -97,9 +99,38 @@ static void RFP_Queue_TryToAssignNewTask(rfp_executor_status_t* executor) {
 }
 
 
-static void RFP_Queue_HandleTaskStatus(rfp_executor_status_t* executor) {
-	(void) executor;
-	executor->Action = RFP_Queue_Action_Poll;
+static void RFP_Queue_HandleTaskStatus(rfp_executor_status_t* E) {
+	if (!E->ActiveTask) return;
+	rfp_task_status_t reported = E->Status_Reported;
+	if (E->Number_Reported != E->Number_Assigned) {
+		reported = RFP_Task_None;
+		// TODO: Uncomment after testing
+		// E->Status_Estimated = RFP_Task_None;
+	}
+
+	do { // Breakable block
+		if (E->Status_Estimated == RFP_Task_Unknown) {
+			E->Status_Estimated = RFP_Task_None;
+			// TODO: Add task reset
+		}
+		if (E->Status_Estimated == RFP_Task_None) {
+			E->Action = RFP_Queue_Action_SendData_Add0;
+			break;
+		}
+		if (E->Status_Estimated == RFP_Task_GotAdd0) {
+			E->Action = RFP_Queue_Action_SendData_Add1;
+			break;
+		}
+		if (E->Status_Estimated == RFP_Task_GotAdd1) {
+			E->Action = RFP_Queue_Action_SendData_Add2;
+			break;
+		}
+		if ((E->Status_Estimated == RFP_Task_Filled) && (reported < RFP_Task_Filled)) {
+			E->Action = RFP_Queue_Action_Poll;
+			break;
+		}
+	} while (0);
+	// printf("Task #%d handled. It is %d now\n", E->ActiveTask->index, E->Action);
 }
 
 static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queue_action_t action) {
@@ -116,15 +147,26 @@ static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queu
 			_sleep_step();
 			break;
 		case RFP_Queue_Action_Release:
-			printf("Worker %d: RFP_Queue_Action_Poll\n", executor->ExecutorNumber);
+			printf("Worker %d: RFP_Queue_Action_Release\n", executor->ExecutorNumber);
 			_sleep_step();
 			break;
 		case RFP_Queue_Action_ReadData:
-			printf("Worker %d: RFP_Queue_Action_Poll\n", executor->ExecutorNumber);
+			printf("Worker %d: RFP_Queue_Action_ReadData\n", executor->ExecutorNumber);
 			_sleep_step();
 			break;
-		case RFP_Queue_Action_SendData:
-			printf("Worker %d: RFP_Queue_Action_Poll\n", executor->ExecutorNumber);
+		case RFP_Queue_Action_SendData_Add0:
+			executor->Status_Estimated = RFP_Task_GotAdd0;
+			printf("Worker %d: RFP_Queue_Action_SendData_Add0\n", executor->ExecutorNumber);
+			_sleep_step();
+			break;
+		case RFP_Queue_Action_SendData_Add1:
+			executor->Status_Estimated = RFP_Task_GotAdd1;
+			printf("Worker %d: RFP_Queue_Action_SendData_Add1\n", executor->ExecutorNumber);
+			_sleep_step();
+			break;
+		case RFP_Queue_Action_SendData_Add2:
+			executor->Status_Estimated = RFP_Task_Filled;
+			printf("Worker %d: RFP_Queue_Action_SendData_Add2\n", executor->ExecutorNumber);
 			_sleep_step();
 			break;
 	}

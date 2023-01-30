@@ -22,7 +22,9 @@ struct rfp_executor_status_t {
 		// Above 128 - action
 		RFP_Queue_Action_Release,
 		RFP_Queue_Action_ReadData,
-		RFP_Queue_Action_SendData,
+		RFP_Queue_Action_SendData_Add0,
+		RFP_Queue_Action_SendData_Add1,
+		RFP_Queue_Action_SendData_Add2,
 		// Higher the action value = higher priority of execution
 	} Action;
 };
