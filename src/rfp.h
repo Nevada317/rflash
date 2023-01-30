@@ -118,6 +118,7 @@ typedef enum __attribute__((__packed__)) {
 	RFP_Task_PrepRead  = 0x51U, // Preparing chip for read
 	RFP_Task_Reading   = 0x52U, // Reading requested page
 
+	RFP_Task_Unknown   = 0x7FU, // State is unknown (internal use)
 	// Final states
 	// Good results - 80-87
 	RFP_Task_Finished  = 0x80U, // Write completed

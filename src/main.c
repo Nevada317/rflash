@@ -513,10 +513,14 @@ int main(int argc, char *argv[]) {
 		// if (Failed) break;
 		// send_rfp_queue(&rfp_queue);
 
-		rfp_flexbuffer_t * temp = RFP_CreateParcel(RFP_CMD_Add0, 0x55, &rfp_queue->Buffer);
-		if (temp) {
-			server_send(&temp->Data, temp->Length);
-		}
+		RFP_Queue_Init();
+		RFP_Queue_StartTask(rfp_queue);
+		RFP_Queue_Wait();
+
+		// rfp_flexbuffer_t * temp = RFP_CreateParcel(RFP_CMD_Add0, 0x55, &rfp_queue->Buffer);
+		// if (temp) {
+		// 	server_send(&temp->Data, temp->Length);
+		// }
 	} while (0);
 
 	if (Failed) {
