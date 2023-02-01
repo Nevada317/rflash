@@ -12,6 +12,7 @@ static void* RFP_WorkerLoop(void*);
 static void RFP_Queue_TryToAssignNewTask(rfp_executor_status_t* executor);
 static void RFP_Queue_HandleTaskStatus(rfp_executor_status_t* executor);
 static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queue_action_t action);
+static void RFP_HandlePollResult(const uint8_t idx, const uint8_t status);
 
 static void _sleep_step();
 
@@ -65,6 +66,10 @@ static void* RFP_WorkerLoop(void*) {
 				_sleep_step();
 				break;
 			case RFP_Queue_Action_WaitExecution:
+				_sleep_step();
+				break;
+			case RFP_Queue_Action_Result:
+				// TODO: Remove result
 				_sleep_step();
 				break;
 			case RFP_Queue_Action_Poll:
@@ -129,6 +134,16 @@ static void RFP_Queue_HandleTaskStatus(rfp_executor_status_t* E) {
 			E->Action = RFP_Queue_Action_Poll;
 			break;
 		}
+		if ((E->Status_Estimated >= RFP_Task_Filled) && (reported >= RFP_Task_Filled) && (reported < RFP_Task_Finished)) {
+			E->Action = RFP_Queue_Action_WaitExecution;
+			E->Status_Estimated = RFP_Task_Process;
+			break;
+		}
+		if ((E->Status_Estimated >= RFP_Task_Filled) && (reported >= RFP_Task_Finished)) {
+			E->Action = RFP_Queue_Action_Result;
+			break;
+		}
+		printf("Task #%d NOT handled - status est %02x, rpt %02x\n", E->Status_Estimated, reported);
 	} while (0);
 	// printf("Task #%d handled. It is %d now\n", E->ActiveTask->index, E->Action);
 }
@@ -168,6 +183,9 @@ static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queu
 			executor->Status_Estimated = RFP_Task_Filled;
 			printf("Worker %d: RFP_Queue_Action_SendData_Add2\n", executor->ExecutorNumber);
 			_sleep_step();
+
+			// TODO: REMOVE THIS DUMMY!
+			RFP_HandlePollResult(executor->Number_Assigned, RFP_Task_Filled);
 			break;
 	}
 
@@ -176,4 +194,27 @@ static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queu
 static void _sleep_step() {
 	fflush(stdout);
 	sleep_ms(100, true);
+}
+
+static void RFP_HandlePollResult(const uint8_t idx, const uint8_t status) {
+	printf("Poll request response: tid %02x now has status %02x\n", idx, status);
+	rfp_executor_status_t* E = 0;
+	for (uint8_t i = 0; i < RFP_QUEUE_EXECUTORS_COUNT; i++) {
+		if (Executor[i].Number_Assigned == idx) {
+			E = &Executor[i];
+		}
+	}
+	if (E) {
+		printf("Executor found: %p. %02x -> %02x\n", E, E->Status_Estimated, status);
+		E->Status_Reported = status;
+		E->Number_Reported = idx;
+		if (E->Number_Reported == E->Number_Assigned) {
+			if (E->Status_Estimated > E->Status_Reported) {
+				E->Status_Estimated = E->Status_Reported;
+			}
+		}
+	} else {
+		printf("Executor NOT found: task %02x\n", idx);
+	}
+
 }

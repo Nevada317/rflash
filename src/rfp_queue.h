@@ -20,6 +20,7 @@ struct rfp_executor_status_t {
 		// Equal 128 - active poll request
 		RFP_Queue_Action_Poll = 128,
 		// Above 128 - action
+		RFP_Queue_Action_Result,
 		RFP_Queue_Action_Release,
 		RFP_Queue_Action_ReadData,
 		RFP_Queue_Action_SendData_Add0,
