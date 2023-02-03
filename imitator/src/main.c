@@ -33,7 +33,7 @@ void test_cb(void*) {
 	free(flex);
 }
 
-int main(int argc, char *argv[]) {
+int main(int, char **) {
 	poll_timer = PERIODIC_CreateTimer(test_cb, 0, 5000);
 	RFP_Transport_Decode_SetCallback(&my_cb);
 	server_start(8080, &RFP_Transport_Decode_Block);
