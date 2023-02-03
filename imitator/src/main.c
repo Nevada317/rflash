@@ -2,6 +2,7 @@
 #include "tcp_server.h"
 #include "periodic.h"
 #include "rfp.h"
+#include "rfp_transport_decoder.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -34,7 +35,8 @@ void test_cb(void*) {
 
 int main(int argc, char *argv[]) {
 	poll_timer = PERIODIC_CreateTimer(test_cb, 0, 5000);
-	server_start(8080, &my_cb);
+	RFP_Transport_Decode_SetCallback(&my_cb);
+	server_start(8080, &RFP_Transport_Decode_Block);
 	PERIODIC_DestroyTimer(poll_timer);
 	return 0;
 }
