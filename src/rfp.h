@@ -231,7 +231,7 @@ typedef struct __attribute__((packed)) rfp_flexbuffer_t {
 } rfp_flexbuffer_t;
 
 typedef struct __attribute__((packed)) rfp_transport_rx_t {
-	uint8_t Cmd;
+	rfp_command_t Cmd;
 	uint8_t Idx;
 	uint8_t Len;
 	uint8_t Payload[];
