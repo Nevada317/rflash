@@ -37,22 +37,55 @@ static uint16_t CRC_Dummy(void* buffer, uint8_t len) {
 rfp_flexbuffer_t * RFP_CreateParcel(rfp_command_t command, uint8_t index, rfp_buffer_t* buffer) {
 	uint16_t UnstuffedLength = 1+1+1+128+2; // See "Transport parcel"
 	uint8_t idx = index;
-	uint8_t len = 128;
+	uint8_t len = 0;
 	void* src = 0;
-	if (buffer) {
-		src = buffer->Payload;
-	} else {
-		len = 0;
+
+	switch (command) {
+		case RFP_CMD_POLL:
+			idx = 0xFF;
+			break;
+		case RFP_CMD_Add0:
+			if (buffer) {
+				const uint16_t psize = buffer->PayloadSize ? buffer->PayloadSize : 256;
+				src = &buffer->Payload[0];
+				len = psize > 128 ? 128 : psize;
+			}
+			break;
+		case RFP_CMD_Add1:
+			if (buffer) {
+				const uint16_t psize = buffer->PayloadSize ? buffer->PayloadSize : 256;
+				src = &buffer->Payload[128];
+				len = psize > 128 ? psize - 128 : 0;
+			}
+			break;
+		case RFP_CMD_Add2:
+			if (buffer) {
+				src = buffer->Payload + sizeof(buffer->Payload);
+				len = sizeof(*buffer) - sizeof(buffer->Payload);
+			}
+			break;
+		case RFP_CMD_Get0:
+		case RFP_CMD_Get1:
+		case RFP_CMD_Ack:
+		case RFP_CMD_RESET:
+
+		// Rasponse-only calls. We newer form them
+		case RFP_CMD_REPORT:
+		case RFP_CMD_Data0:
+		case RFP_CMD_Data1:
+			return 0;
 	}
+	if (!src) len = 0;
+
 	uint8_t InitialBuffer[UnstuffedLength];
 	uint16_t w = 0;
 	InitialBuffer[w++] = (uint8_t) command;
 	InitialBuffer[w++] = (uint8_t) idx;
 	InitialBuffer[w++] = (uint8_t) len;
-	if (len) {
+	if (src && len) {
 		memcpy(&InitialBuffer[w], src, len);
+		w += len;
 	}
-	w += len;
 	uint16_t CRC = CRC_Dummy(InitialBuffer, w);
 	InitialBuffer[w++] = (CRC & 0xFF);
 	InitialBuffer[w++] = (CRC >> 8);
