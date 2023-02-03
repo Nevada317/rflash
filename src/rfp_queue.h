@@ -34,5 +34,9 @@ void RFP_Queue_Init();
 void RFP_Queue_StartTask(rfp_list_t* FirstItem);
 void RFP_Queue_Wait();
 
+void RFP_Queue_SetTxFunction(void (*cb)(void* data, int length));
+void RFP_Queue_RXC_Buffer(void* data, int length); // Raw TCP/UART frame with STX etc.
+void RFP_Queue_RXC_Packet(void* data, int length); // Handle pre-checked parcel
+
 
 #endif /* _RFP_QUEUE_H */

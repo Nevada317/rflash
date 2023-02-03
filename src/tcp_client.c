@@ -18,6 +18,7 @@
 
 static int sockfd = -1;
 
+static void (*RFP_Queue_Tx_Buffer)(void* data, int length);
 
 pthread_t thread_reader = 0;
 
