@@ -54,7 +54,7 @@ void RFP_Transport_Decode_Byte(uint8_t data) {
 		U.RxIndex = 0;
 	}
 	if (U.RxIndex >= 0) {
-		if (U.RxIndex >= sizeof(U.Buffer)) {
+		if ((unsigned int) U.RxIndex >= sizeof(U.Buffer)) {
 			U.RxIndex = RxIndex_Overflow;
 			return;
 		}
