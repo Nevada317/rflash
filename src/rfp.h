@@ -82,6 +82,7 @@
 #define RFP_ESTX (RFP_STX ^ RFP_STUFFING_MASK)
 #define RFP_EESC (RFP_ESC ^ RFP_STUFFING_MASK)
 
+#define RFP_TaskNumber_Unassigned 0xFF
 
 
 typedef enum __attribute__((__packed__)) {

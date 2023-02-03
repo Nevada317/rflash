@@ -148,17 +148,27 @@ static void RFP_Queue_HandleTaskStatus(rfp_executor_status_t* E) {
 	// printf("Task #%d handled. It is %d now\n", E->ActiveTask->index, E->Action);
 }
 
+static void RFP_ParseRxData(void* data, int length) {
+
+}
+
 static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queue_action_t action) {
-	(void) executor;
-	(void) action;
+	if (!executor) return;
+	rfp_flexbuffer_t * flex = 0;
+	uint8_t tasknum = RFP_TaskNumber_Unassigned;
+	rfp_buffer_t * bfr = 0;
+	if (executor && executor->ActiveTask) bfr = &executor->ActiveTask->Buffer;
+	if (executor) tasknum = executor->Number_Assigned;
 
 	switch (action) {
+		case RFP_Queue_Action_Result:
 		case RFP_Queue_Action_Unassigned:
 		case RFP_Queue_Action_WaitExecution:
 			// Do nothing
 			break;
 		case RFP_Queue_Action_Poll:
 			printf("Worker %d: RFP_Queue_Action_Poll\n", executor->ExecutorNumber);
+			flex = RFP_CreateParcel(RFP_CMD_POLL, tasknum, bfr);
 			_sleep_step();
 			break;
 		case RFP_Queue_Action_Release:
@@ -172,21 +182,36 @@ static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queu
 		case RFP_Queue_Action_SendData_Add0:
 			executor->Status_Estimated = RFP_Task_GotAdd0;
 			printf("Worker %d: RFP_Queue_Action_SendData_Add0\n", executor->ExecutorNumber);
+			flex = RFP_CreateParcel(RFP_CMD_Add0, tasknum, bfr);
 			_sleep_step();
 			break;
 		case RFP_Queue_Action_SendData_Add1:
 			executor->Status_Estimated = RFP_Task_GotAdd1;
 			printf("Worker %d: RFP_Queue_Action_SendData_Add1\n", executor->ExecutorNumber);
+			flex = RFP_CreateParcel(RFP_CMD_Add1, tasknum, bfr);
 			_sleep_step();
 			break;
 		case RFP_Queue_Action_SendData_Add2:
 			executor->Status_Estimated = RFP_Task_Filled;
 			printf("Worker %d: RFP_Queue_Action_SendData_Add2\n", executor->ExecutorNumber);
+			flex = RFP_CreateParcel(RFP_CMD_Add2, tasknum, bfr);
 			_sleep_step();
 
 			// TODO: REMOVE THIS DUMMY!
 			RFP_HandlePollResult(executor->Number_Assigned, RFP_Task_Filled);
 			break;
+	}
+	if (flex) {
+		// Here we should try to send data
+
+		// TODO: Add settable function to send data
+		extern void server_send(void* data, int length); // THIS IS BAD IDEA
+		server_send(flex->Data, flex->Length);
+
+		RFP_Transport_Decode_SetCallback(&RFP_ParseRxData);
+		RFP_Transport_Decode_Block(flex->Data, flex->Length);
+
+		free(flex);
 	}
 
 }
