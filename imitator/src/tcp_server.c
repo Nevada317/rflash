@@ -101,7 +101,7 @@ int server_start(int port, void (*cb)(void* data, int length)) {
 	servaddr.sin_port = htons(port);
 
 	int true_int = 1;
-	setsockopt(sockfd, AF_INET, SO_REUSEADDR, &true_int, sizeof(true_int));
+	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &true_int, sizeof(true_int));
 
 	// Binding newly created socket to given IP and verification
 	if ((bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr))) != 0) {
