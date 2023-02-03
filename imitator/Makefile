@@ -22,6 +22,7 @@ CFLAGS  += -pthread
 
 # Add all search paths for headers on order of prefrence
 CFLAGS += -Isrc/
+CFLAGS += -I../src/
 
 # Optimize-out unused functions
 CFLAGS  += -fdata-sections
