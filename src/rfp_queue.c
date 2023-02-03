@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #define RFP_QUEUE_EXECUTORS_COUNT 2
+#define RFP_QUEUE_REPORT_SIZE 2
 
 static pthread_t RFP_Queue_Executor = 0;
 static void* RFP_WorkerLoop(void*);
@@ -51,7 +52,33 @@ void RFP_Queue_RXC_Buffer(void* data, int length) { // Raw TCP/UART frame with S
 	RFP_Transport_Decode_Block(data, length);
 }
 
+static void ParseWorkerInfo(uint8_t i, uint8_t* data) {
+	Executor[i].Number_Reported = data[0];
+	Executor[i].Status_Reported = data[1];
+	if (Executor[i].Number_Reported == Executor[i].Number_Assigned) {
+		if (Executor[i].Status_Reported <= Executor[i].Status_Estimated) {
+			Executor[i].Status_Estimated = Executor[i].Status_Reported;
+		}
+	}
+}
+
+static void _formal_breakpoint() {;};
+
 void RFP_Queue_RXC_Packet(void* data, int length) { // Handle pre-checked parcel
+	const rfp_transport_rx_t* D = data;
+	// const uint8_t E = D->Idx & 1;
+	// const bool match = Executor[E].Number_Assigned == D->Idx;
+	switch (D->Cmd) {
+		case RFP_CMD_REPORT:
+			for (uint8_t i = 0; i < RFP_QUEUE_EXECUTORS_COUNT; i++) {
+				ParseWorkerInfo(i, &D->Payload[i*RFP_QUEUE_REPORT_SIZE]);
+			}
+			break;
+		default:
+			break;
+	}
+
+	_formal_breakpoint();
 	printf("I AM HERE!\n");
 }
 
@@ -60,6 +87,17 @@ void RFP_Queue_Wait() {
 	pthread_join(RFP_Queue_Executor, NULL);
 }
 
+static void RFP_ExecutorFinished(rfp_executor_status_t* executor) {
+	printf("Worker %d: FINISHED\n\n", executor->ExecutorNumber);
+	// memset(executor, 0, sizeof(*executor));
+	executor->Number_Reported = 0xE0; // Impossible dummy
+	executor->Status_Estimated = RFP_Task_None;
+	executor->Status_Reported = RFP_Task_Unknown;
+	executor->Number_Assigned = 0xFF;
+	executor->ActiveTask = 0;
+	executor->Action = RFP_Queue_Action_Unassigned;
+
+}
 
 static void* RFP_WorkerLoop(void*) {
 	while (1) {
@@ -80,15 +118,15 @@ static void* RFP_WorkerLoop(void*) {
 
 		switch (PriorityAction) {
 			case RFP_Queue_Action_Unassigned:
-				printf("BUG: This should not be reached! RFP_Queue_Action_Unassigned\n");
-				_sleep_step();
+				if (!NextUnassignedTask) {
+					return 0;
+				}
 				break;
 			case RFP_Queue_Action_WaitExecution:
 				_sleep_step();
 				break;
 			case RFP_Queue_Action_Result:
-				// TODO: Remove result
-				_sleep_step();
+				RFP_ExecutorFinished(&Executor[PriorityExecutor]);
 				break;
 			case RFP_Queue_Action_Poll:
 			case RFP_Queue_Action_Release:
@@ -110,6 +148,7 @@ static void RFP_Queue_TryToAssignNewTask(rfp_executor_status_t* executor) {
 	rfp_list_t* newTask = NextUnassignedTask;
 	NextUnassignedTask = NextUnassignedTask->next;
 
+	executor->Action = RFP_Queue_Action_Unassigned;
 	executor->ActiveTask = newTask;
 	executor->Number_Assigned = NewTaskId;
 	executor->Number_Reported = 0xE0; // Impossible dummy
@@ -176,7 +215,6 @@ static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queu
 	if (executor) tasknum = executor->Number_Assigned;
 
 	switch (action) {
-		case RFP_Queue_Action_Result:
 		case RFP_Queue_Action_Unassigned:
 		case RFP_Queue_Action_WaitExecution:
 			// Do nothing
@@ -184,7 +222,6 @@ static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queu
 		case RFP_Queue_Action_Poll:
 			printf("Worker %d: RFP_Queue_Action_Poll\n", executor->ExecutorNumber);
 			flex = RFP_CreateParcel(RFP_CMD_POLL, tasknum, bfr);
-			_sleep_step();
 			break;
 		case RFP_Queue_Action_Release:
 			printf("Worker %d: RFP_Queue_Action_Release\n", executor->ExecutorNumber);
@@ -198,22 +235,18 @@ static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queu
 			executor->Status_Estimated = RFP_Task_GotAdd0;
 			printf("Worker %d: RFP_Queue_Action_SendData_Add0\n", executor->ExecutorNumber);
 			flex = RFP_CreateParcel(RFP_CMD_Add0, tasknum, bfr);
-			_sleep_step();
 			break;
 		case RFP_Queue_Action_SendData_Add1:
 			executor->Status_Estimated = RFP_Task_GotAdd1;
 			printf("Worker %d: RFP_Queue_Action_SendData_Add1\n", executor->ExecutorNumber);
 			flex = RFP_CreateParcel(RFP_CMD_Add1, tasknum, bfr);
-			_sleep_step();
 			break;
 		case RFP_Queue_Action_SendData_Add2:
 			executor->Status_Estimated = RFP_Task_Filled;
 			printf("Worker %d: RFP_Queue_Action_SendData_Add2\n", executor->ExecutorNumber);
 			flex = RFP_CreateParcel(RFP_CMD_Add2, tasknum, bfr);
-			_sleep_step();
-
-			// TODO: REMOVE THIS DUMMY!
-			RFP_HandlePollResult(executor->Number_Assigned, RFP_Task_Filled);
+			break;
+		default:
 			break;
 	}
 	if (flex) {
@@ -221,10 +254,11 @@ static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queu
 		if (RFP_Queue_TxFunction) {
 			RFP_Queue_TxFunction(flex->Data, flex->Length);
 		}
-
 		free(flex);
 	}
-
+	if (action == RFP_Queue_Action_Poll) {
+		_sleep_step();
+	}
 }
 
 static void _sleep_step() {

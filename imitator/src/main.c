@@ -38,7 +38,7 @@ void my_cb(void* data, int length) {
 			break;
 		case RFP_CMD_Add2:
 			if (match) {
-				Workers[W].Status = RFP_Task_PrepWrite;
+				Workers[W].Status = RFP_Task_Finished;
 			}
 			break;
 		default:
