@@ -18,6 +18,7 @@ rfp_buffer_t DataBuffer[2] = {0,};
 
 void my_cb(void* data, int length) {
 	printf("Rx cb: %d @ %p\n", length, data);
+	PrintBuffer("RxL", data, length);
 	PERIODIC_TriggerTimer(poll_timer);
 	// server_send(data, length);
 	// server_send("test\n", 5);

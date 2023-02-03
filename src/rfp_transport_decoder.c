@@ -17,14 +17,7 @@ static struct {
 	bool Escape;
 	union {
 		uint8_t Buffer[1+1+1+1+128+2];
-		struct __attribute__((packed)) {
-			uint8_t Stx;
-			uint8_t Cmd;
-			uint8_t Idx;
-			uint8_t Len;
-			uint8_t Payload[];
-			// CRC not shown, as Payload is flex
-		};
+		rfp_transport_rx_t Parcel;
 	};
 	int RxIndex;
 } RFP_Transport_Decoder_State;
@@ -52,6 +45,7 @@ void RFP_Transport_Decode_Block(void* data, int length) {
 void RFP_Transport_Decode_Byte(uint8_t data) {
 	if (data == RFP_STX) {
 		U.RxIndex = 0;
+		return;
 	}
 	if (U.RxIndex >= 0) {
 		if ((unsigned int) U.RxIndex >= sizeof(U.Buffer)) {
@@ -67,17 +61,17 @@ void RFP_Transport_Decode_Byte(uint8_t data) {
 			U.Escape = false;
 		}
 		U.Buffer[U.RxIndex++] = data;
-		if (U.RxIndex > 4) {
+		if (U.RxIndex > 3) {
 			// Len already received
-			const uint8_t len = U.Len > 128 ? 0 : U.Len;
-			if (U.RxIndex >= (1+1+1+1+len+2)) { // STX+CMD+IDX+LEN+PAYLOAD+CRC
+			const uint8_t len = U.Parcel.Len > 128 ? 0 : U.Parcel.Len;
+			if (U.RxIndex >= (1+1+1+len+2)) { // CMD+IDX+LEN+PAYLOAD+CRC
 				if (U.decoder_crc_checker) {
 					if (!U.decoder_crc_checker(U.Buffer, U.RxIndex)) {
 						U.RxIndex = RxIndex_BadCRC;
 						return;
 					}
 				}
-				if (U.decoder_cb) U.decoder_cb(U.Buffer, U.RxIndex);
+				if (U.decoder_cb) U.decoder_cb(U.Buffer, U.RxIndex - 2);
 				U.RxIndex = RxIndex_Complete;
 			}
 		}

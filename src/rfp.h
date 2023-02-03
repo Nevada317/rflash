@@ -230,6 +230,13 @@ typedef struct __attribute__((packed)) rfp_flexbuffer_t {
 	uint8_t Data[];
 } rfp_flexbuffer_t;
 
+typedef struct __attribute__((packed)) rfp_transport_rx_t {
+	uint8_t Cmd;
+	uint8_t Idx;
+	uint8_t Len;
+	uint8_t Payload[];
+} rfp_transport_rx_t;
+
 rfp_list_t* RFP_LIST_NewRecord(rfp_list_t** root_ptr);
 void RFP_AppendCRC(rfp_buffer_t* Buffer);
 
