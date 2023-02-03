@@ -107,6 +107,11 @@ ${BUILD_DIR}/%.o: src/%.c ${HEADS} ${EXTRADEPS}
 clean:
 	rm -rf ${CLEAR_TARGETS}
 
+.PHONY: imitator
+imitator:
+	@(cd imitator; $(MAKE))
+
+all: $(DEFAULT_TARGET) imitator
 # UNKNOWN TARGET HANDLER
 unknown_target:
 	@echo "WARNING: Build type flags not provided!"
