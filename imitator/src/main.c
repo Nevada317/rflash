@@ -11,15 +11,41 @@ periodic_timer_t* poll_timer;
 
 struct {
 	uint8_t ActiveTask;
-	uint8_t Status;
+	rfp_task_status_t Status;
 } Workers[2] = {0,};
 
 rfp_buffer_t DataBuffer[2] = {0,};
 
 void my_cb(void* data, int length) {
-	printf("Rx cb: %d @ %p\n", length, data);
+	const rfp_transport_rx_t* D = data;
+	const uint8_t W = D->Idx & 1;
+	const bool match = (Workers[W].ActiveTask == D->Idx);
+	switch (D->Cmd) {
+		case RFP_CMD_RESET:
+			memset(Workers, 0, sizeof(Workers));
+			break;
+		case RFP_CMD_POLL:
+			PERIODIC_TriggerTimer(poll_timer);
+			break;
+		case RFP_CMD_Add0:
+			Workers[W].Status = RFP_Task_GotAdd0;
+			Workers[W].ActiveTask = D->Idx;
+			break;
+		case RFP_CMD_Add1:
+			if (match) {
+				Workers[W].Status = RFP_Task_GotAdd1;
+			}
+			break;
+		case RFP_CMD_Add2:
+			if (match) {
+				Workers[W].Status = RFP_Task_PrepWrite;
+			}
+			break;
+		default:
+			break;
+	}
+	// printf("Rx cb: %d @ %p\n", length, data);
 	PrintBuffer("RxL", data, length);
-	PERIODIC_TriggerTimer(poll_timer);
 	// server_send(data, length);
 	// server_send("test\n", 5);
 }
