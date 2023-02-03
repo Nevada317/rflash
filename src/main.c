@@ -455,18 +455,6 @@ static void sign_rfp_queue(rfp_list_t** rfp_qptr) {
 	}
 }
 
-static void send_rfp_queue(rfp_list_t** rfp_qptr) {
-	// This is stub only. That is not supposed to work with rel RFP
-
-	if (!rfp_qptr) return;
-	if (!*rfp_qptr) return;
-	rfp_list_t* rfp_item = *rfp_qptr;
-	while (rfp_item) {
-		server_send(&rfp_item->Buffer, sizeof(rfp_item->Buffer));
-		rfp_item = rfp_item->next;
-	}
-}
-
 static void arg_DUMMY(char key, char* arg) {
 	if (Failed) return;
 	if (!key) key = '?';
@@ -509,9 +497,6 @@ int main(int argc, char *argv[]) {
 
 		if (Failed) break;
 		Failed |= !connect_tcp_qualified("127.0.0.1", 8080, my_cb);
-
-		// if (Failed) break;
-		// send_rfp_queue(&rfp_queue);
 
 		RFP_Queue_Init();
 		RFP_Queue_StartTask(rfp_queue);

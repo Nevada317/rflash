@@ -1,8 +1,10 @@
 #include "rfp_queue.h"
 #include "sleep.h"
+#include "rfp_transport_decoder.h"
 #include <pthread.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define RFP_QUEUE_EXECUTORS_COUNT 2
 
@@ -143,13 +145,15 @@ static void RFP_Queue_HandleTaskStatus(rfp_executor_status_t* E) {
 			E->Action = RFP_Queue_Action_Result;
 			break;
 		}
-		printf("Task #%d NOT handled - status est %02x, rpt %02x\n", E->Status_Estimated, reported);
+		printf("Task #%d NOT handled - status est %02x, rpt %02x\n", E->Number_Assigned, E->Status_Estimated, reported);
 	} while (0);
 	// printf("Task #%d handled. It is %d now\n", E->ActiveTask->index, E->Action);
 }
 
 static void RFP_ParseRxData(void* data, int length) {
-
+	// TODO: Handle incoming data
+	(void) data;
+	(void) length;
 }
 
 static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queue_action_t action) {
