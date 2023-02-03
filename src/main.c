@@ -65,10 +65,6 @@ static void debug() {
 }
 */
 
-void my_cb(void* data, int length) {
-	printf("Rx cb: %d @ %p\n", length, data);
-	// server_send("test\n", 5);
-}
 
 
 static void arg_e(char key, char* arg) {
@@ -474,6 +470,13 @@ arg_key_t Keys[] = {
 	{0}
 };
 
+
+static void TCP_Receive_Callback(void* data, int length) {
+	printf("Rx cb: %d @ %p\n", length, data);
+	RFP_Queue_RXC_Buffer(data, length);
+	// server_send("test\n", 5);
+}
+
 int main(int argc, char *argv[]) {
 	(void)argc;
 
@@ -496,16 +499,12 @@ int main(int argc, char *argv[]) {
 		sign_rfp_queue(&rfp_queue);
 
 		if (Failed) break;
-		Failed |= !connect_tcp_qualified("127.0.0.1", 8080, my_cb);
+		Failed |= !connect_tcp_qualified("127.0.0.1", 8080, TCP_Receive_Callback);
 
 		RFP_Queue_Init();
+		RFP_Queue_SetTxFunction(server_send);
 		RFP_Queue_StartTask(rfp_queue);
 		RFP_Queue_Wait();
-
-		// rfp_flexbuffer_t * temp = RFP_CreateParcel(RFP_CMD_Add0, 0x55, &rfp_queue->Buffer);
-		// if (temp) {
-		// 	server_send(&temp->Data, temp->Length);
-		// }
 	} while (0);
 
 	if (Failed) {

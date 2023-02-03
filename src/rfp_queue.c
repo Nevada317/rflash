@@ -18,6 +18,8 @@ static void RFP_HandlePollResult(const uint8_t idx, const uint8_t status);
 
 static void _sleep_step();
 
+void (*RFP_Queue_TxFunction)(void* data, int length) = 0;
+
 static rfp_executor_status_t Executor[2] = {0,};
 static uint8_t NewTaskId = 0;
 static rfp_list_t* NextUnassignedTask = 0;
@@ -30,6 +32,7 @@ void RFP_Queue_Init() {
 	}
 	NewTaskId = 0;
 	NextUnassignedTask = 0;
+	RFP_Transport_Decode_SetCallback(RFP_Queue_RXC_Packet);
 }
 
 void RFP_Queue_StartTask(rfp_list_t* FirstItem) {
@@ -40,10 +43,23 @@ void RFP_Queue_StartTask(rfp_list_t* FirstItem) {
 	pthread_create(&RFP_Queue_Executor, 0, RFP_WorkerLoop, 0);
 }
 
+void RFP_Queue_SetTxFunction(void (*cb)(void* data, int length)) {
+	RFP_Queue_TxFunction = cb;
+}
+
+void RFP_Queue_RXC_Buffer(void* data, int length) { // Raw TCP/UART frame with STX etc.
+	RFP_Transport_Decode_Block(data, length);
+}
+
+void RFP_Queue_RXC_Packet(void* data, int length) { // Handle pre-checked parcel
+	printf("I AM HERE!\n");
+}
+
 void RFP_Queue_Wait() {
 	// pthread_cancel(RFP_Queue_Executor);
 	pthread_join(RFP_Queue_Executor, NULL);
 }
+
 
 static void* RFP_WorkerLoop(void*) {
 	while (1) {
@@ -150,11 +166,6 @@ static void RFP_Queue_HandleTaskStatus(rfp_executor_status_t* E) {
 	// printf("Task #%d handled. It is %d now\n", E->ActiveTask->index, E->Action);
 }
 
-static void RFP_ParseRxData(void* data, int length) {
-	// TODO: Handle incoming data
-	(void) data;
-	(void) length;
-}
 
 static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queue_action_t action) {
 	if (!executor) return;
@@ -207,13 +218,9 @@ static void RFP_Queue_SendRequest(rfp_executor_status_t* executor, enum rfp_queu
 	}
 	if (flex) {
 		// Here we should try to send data
-
-		// TODO: Add settable function to send data
-		extern void server_send(void* data, int length); // THIS IS BAD IDEA
-		server_send(flex->Data, flex->Length);
-
-		RFP_Transport_Decode_SetCallback(&RFP_ParseRxData);
-		RFP_Transport_Decode_Block(flex->Data, flex->Length);
+		if (RFP_Queue_TxFunction) {
+			RFP_Queue_TxFunction(flex->Data, flex->Length);
+		}
 
 		free(flex);
 	}
