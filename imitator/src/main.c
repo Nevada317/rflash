@@ -4,8 +4,16 @@
 #include "rfp.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 periodic_timer_t* poll_timer;
+
+struct {
+	uint8_t ActiveTask;
+	uint8_t Status;
+} Workers[2] = {0,};
+
+rfp_buffer_t DataBuffer[2] = {0,};
 
 void my_cb(void* data, int length) {
 	printf("Rx cb: %d @ %p\n", length, data);
@@ -17,6 +25,8 @@ void my_cb(void* data, int length) {
 void test_cb(void*) {
 	printf("Tick...\n");
 	rfp_buffer_t report = {0,};
+	memcpy(report.Payload, Workers, sizeof(Workers));
+	report.PayloadSize = sizeof(Workers);
 	rfp_flexbuffer_t* flex = RFP_CreateParcel(RFP_CMD_REPORT, 0, &report);
 	server_send(flex->Data, flex->Length);
 	free(flex);
